@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CopyRight (c) 2015 xsdn, co,.Ltd and others. All rights reserved.
+This program and the accompanying materials are made available under the
+terms of the Eclipse Public License v1.0 which accompanies this distribution,
+and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ZDY: directly use feature-parent -->
+  <parent>
+    <groupId>org.opendaylight.odlparent</groupId>
+    <artifactId>features-parent</artifactId>
+    <version>1.5.0-Lithium</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.xsdn</groupId>
+  <artifactId>xos-features</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <name>${project.artifactId}</name>
+  <packaging>jar</packaging>
+
+  <prerequisites>
+    <maven>3.1.1</maven>
+  </prerequisites>
+
+  <properties>
+    <mdsal.version>1.2.0-Lithium</mdsal.version>
+    <restconf.version>1.2.0-Lithium</restconf.version>
+    <yangtools.version>0.7.0-Lithium</yangtools.version>
+    <openflow.plugin.version>0.1.0-Lithium</openflow.plugin.version>
+    <dlux.version>0.2.0-Lithium</dlux.version>
+    <configfile.directory>etc/opendaylight/karaf</configfile.directory>
+    <features.file>features.xml</features.file>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>features-openflowplugin</artifactId>
+      <version>${openflow.plugin.version}</version>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>features-mdsal</artifactId>
+      <version>${mdsal.version}</version>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>features-restconf</artifactId>
+      <version>${restconf.version}</version>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.dlux</groupId>
+      <artifactId>features-dlux</artifactId>
+      <version>${dlux.version}</version>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>xos-main</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>xos-main</artifactId>
+      <version>${project.version}</version>
+      <type>xml</type>
+      <classifier>config</classifier>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>xos-model</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+</project>

@@ -1,0 +1,22 @@
+module xos {
+    yang-version 1;
+    namespace "urn:opendaylight:params:xml:ns:yang:xos";
+    prefix "xos";
+
+    revision "2015-08-20" {
+        description "Initial revision of xos model";
+    }
+
+
+    /* ZDY: add our persistent data model here.*/
+
+    rpc force-failover-switch {
+        input {
+            leaf nop {
+                type string;
+            }
+        }
+        output {
+        }
+    }
+}

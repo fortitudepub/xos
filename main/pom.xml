@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vi: set et smarttab sw=4 tabstop=4: --><!--
+CopyRight (c) 2015 xsdn, co,.Ltd and others. All rights reserved.
+
+This program and the accompanying materials are made available under the
+terms of the Eclipse Public License v1.0 which accompanies this distribution,
+and is available at http://www.eclipse.org/legal/epl-v10.html
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.xsdn</groupId>
+    <artifactId>xos-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>../parent</relativePath>
+  </parent>
+
+  <groupId>com.xsdn</groupId>
+  <artifactId>xos-main</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>bundle</packaging>
+
+  <properties>
+    <salGeneratorPath>src/main/yang-gen-sal</salGeneratorPath>
+    <jmxGeneratorPath>src/main/yang-gen-config</jmxGeneratorPath>
+    <config.file>src/main/config/default-config.xml</config.file>    
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.opendaylight.yangtools</groupId>
+      <artifactId>yang-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>config-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-binding-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin.model</groupId>
+      <artifactId>model-flow-service</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>xos-model</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+      </plugin>
+      <plugin>
+        <groupId>org.opendaylight.yangtools</groupId>
+        <artifactId>yang-maven-plugin</artifactId>
+        <version>${yangtools.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.opendaylight.yangtools</groupId>
+            <artifactId>maven-sal-api-gen-plugin</artifactId>
+            <version>${yangtools.version}</version>
+            <type>jar</type>
+          </dependency>
+          <dependency>
+            <groupId>org.opendaylight.yangtools</groupId>
+            <artifactId>yang-binding</artifactId>
+            <version>${yangtools.version}</version>
+            <type>jar</type>
+          </dependency>
+          <dependency>
+            <groupId>org.opendaylight.controller</groupId>
+            <artifactId>yang-jmx-generator-plugin</artifactId>
+            <version>${config.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate-sources</goal>
+            </goals>
+            <configuration>
+              <yangFilesRootDir>src/main/yang</yangFilesRootDir>
+              <codeGenerators>
+                <generator>
+                  <codeGeneratorClass>org.opendaylight.yangtools.maven.sal.api.gen.plugin.CodeGeneratorImpl</codeGeneratorClass>
+                  <outputBaseDir>${salGeneratorPath}</outputBaseDir>
+                </generator>
+                <generator>
+                  <codeGeneratorClass>org.opendaylight.controller.config.yangjmxgenerator.plugin.JMXGenerator</codeGeneratorClass>
+                  <outputBaseDir>${jmxGeneratorPath}</outputBaseDir>
+                  <additionalConfiguration>
+                    <namespaceToPackage1>urn:opendaylight:params:xml:ns:yang:controller==org.opendaylight.controller.config.yang</namespaceToPackage1>
+                  </additionalConfiguration>
+                </generator>
+              </codeGenerators>
+              <inspectDependencies>true</inspectDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- attach config file -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-artifacts</id>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>${config.file}</file>
+                  <type>xml</type>
+                  <classifier>config</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>      
+      <!--  cleans up auto generated code  -->
+      <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>${salGeneratorPath}</directory>
+              <includes>
+                <include>**</include>
+              </includes>
+            </fileset>
+            <fileset>
+              <directory>${jmxGeneratorPath}</directory>
+              <includes>
+                <include>**</include>
+              </includes>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
