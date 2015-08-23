@@ -11,11 +11,5 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 /**
  * Created by fortitude on 15-8-21.
  */
-public class XosMain implements XosService {
-
-    @Override
-    public Future<RpcResult<ForceFailoverSwitchOutput>> forceFailoverSwitch(ForceFailoverSwitchInput input) {
-        ForceFailoverSwitchOutputBuilder rstBuilder = new ForceFailoverSwitchOutputBuilder();
-        return RpcResultBuilder.success(rstBuilder.build()).buildFuture();
-    }
+public class XosMain {
 }

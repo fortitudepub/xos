@@ -1,11 +1,13 @@
 package org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820;
 
+import com.xsdn.main.rpc.XosRpcProvider;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.SalGroupService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820.modules.module.configuration.xos.BindingAwareBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,9 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         SalGroupService salGroupService = rpcRegistryDependency.getRpcService (SalGroupService.class);
         PacketProcessingService packetProcessingService =
                 rpcRegistryDependency.getRpcService(PacketProcessingService.class);
+
+        // Register xos rpc.
+        getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());
 
         // TODO(zdy): start packet in processor and etc.
 

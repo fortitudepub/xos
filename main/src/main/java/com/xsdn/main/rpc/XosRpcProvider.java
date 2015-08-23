@@ -5,7 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-package com.xsdn.main;
+package com.xsdn.main.rpc;
 
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker;
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.ProviderContext;
@@ -14,24 +14,24 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev1
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class XosProvider implements BindingAwareProvider, AutoCloseable {
+public class XosRpcProvider implements BindingAwareProvider, AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(XosProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(XosRpcProvider.class);
     private BindingAwareBroker.RpcRegistration<XosService> xosService;
 
     @Override
     public void onSessionInitiated(ProviderContext session) {
-        LOG.info("XosProvider Session Initiated");
+        LOG.info("XosRpcProvider Session Initiated");
 
         LOG.info("XOS(eXtensible network Operating System) started");
 
         // Register the RPC service.
-        xosService = session.addRpcImplementation(XosService.class, new XosMain());
+        xosService = session.addRpcImplementation(XosService.class, new XosRpcImpl());
     }
 
     @Override
     public void close() throws Exception {
-        LOG.info("XosProvider Closed");
+        LOG.info("XosRpcProvider Closed");
     }
 
 }

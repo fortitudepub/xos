@@ -53,6 +53,15 @@ module xos-main {
                         }
                  }
             }
+
+            container binding-aware-broker {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity md-sal-binding:binding-broker-osgi-registry;
+                    }
+                }
+            }
         }
     }
 }
