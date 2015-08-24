@@ -3,12 +3,57 @@ module xos {
     namespace "urn:opendaylight:params:xml:ns:yang:xos";
     prefix "xos";
 
+    import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
+    import ietf-yang-types {prefix yang; revision-date "2010-09-24";}
+
     revision "2015-08-20" {
         description "Initial revision of xos model";
     }
 
+    /* Define the virtual interface type, which is used as two purpose,
+       1. as ospf virtual interface connect to the edge router
+       2. as virtual gateway for the dns servers in the subnet
+     */
+    grouping virtual-interface {
+        leaf virtual-interface-ip {
+            type inet:ipv4-address;
+            description "IPv4 address of the virtual interface";
+        }
 
-    /* ZDY: add our persistent data model here.*/
+        leaf virtual-interface-mac {
+            type yang:mac-address;
+            description "MAC address of the virtual interface, will be used for ARP proxy and routing identification";
+        }
+    }
+
+    grouping sdn-switch {
+        leaf sdn-switch-dpid {
+            type string;
+            description "SDN switch dpid in string format, this is provided by user through api";
+        }
+
+        /* property of a SDN switch */
+
+        container edge-virtual-interface {
+            uses virtual-interface;
+            description "for edge router ospf connectivity";
+        }
+
+        /* TODO: may be should add a subnet id here*/
+        container subnet-virtual-interface {
+            uses virtual-interface;
+            description "for subnet gateway";
+        }
+    }
+
+    /* TODO: limit the switch up to 2, one for master, other for slave. */
+    list sdn-switches {
+        key "sdn-switch-dpid";
+        uses sdn-switch;
+        description "sdn switch definition";
+    }
+
+    /* TODO: add our persistent data model here.*/
 
     rpc force-failover-switch {
         input {
