@@ -19,10 +19,6 @@ module xos-main {
         config:java-name-prefix Xos;
     }
 
-    /* ZDY: add our user-configurable parameter like virtual gateway ip, server ip address and port bindings.
-     We should prefer the static binding which is provided by user through rest conf or rpc.
-     topology detected by lldp should be used as a diagnose tool only. */
-
     augment "/config:modules/config:module/config:configuration" {
         case xos {
             when "/config:modules/config:module/config:type = 'xos'";

@@ -27,6 +27,8 @@ module xos {
     }
 
     grouping sdn-switch {
+        description "Abstract represe   ntation of a SDN switch";
+
         leaf sdn-switch-dpid {
             type string;
             description "SDN switch dpid in string format, this is provided by user through api";
@@ -39,7 +41,7 @@ module xos {
             description "for edge router ospf connectivity";
         }
 
-        /* TODO: may be should add a subnet id here*/
+        /* TODO: may be should add a subnet id here for later support multiple subnet. */
         container subnet-virtual-interface {
             uses virtual-interface;
             description "for subnet gateway";
@@ -47,10 +49,12 @@ module xos {
     }
 
     /* TODO: limit the switch up to 2, one for master, other for slave. */
-    list sdn-switches {
-        key "sdn-switch-dpid";
-        uses sdn-switch;
-        description "sdn switch definition";
+    container xos {
+        list sdn-switches {
+            key "sdn-switch-dpid";
+            uses sdn-switch;
+            description "sdn switch definition";
+        }
     }
 
     /* TODO: add our persistent data model here.*/

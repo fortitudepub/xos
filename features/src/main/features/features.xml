@@ -20,6 +20,8 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   </feature>
   <feature name='xsdn-xos' version='${project.version}' description='XSDN :: xos'>
     <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
+    <!-- ZDY: surely we want to support clustering, enable clustering default -->
+    <feature version='${mdsal.version}'>odl-mdsal-clustering</feature>
     <feature version='${project.version}'>xsdn-xos-model</feature>
     <!-- ZDY: we really need openflow to make whole thing work -->
     <feature version="${openflow.plugin.version}">odl-openflowplugin-flow-services</feature>
@@ -33,6 +35,11 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   <feature name='xsdn-xos-ui' version='${project.version}' description='XSDN :: xos :: UI'>
     <feature version="${project.version}">xsdn-xos-rest</feature>
     <feature version="${dlux.version}">odl-dlux-core</feature>
+    <!-- add yangui and yangvisualizer to help view data model without install after startup.
+     Note yangvisualizer is not a must but because there are bug in
+     lithium packaging so we have to add it here. -->
+    <feature version="${dlux.version}">odl-dlux-yangui</feature>
+    <feature version="${dlux.version}">odl-dlux-yangvisualizer</feature>
   </feature>
 
 </features>
