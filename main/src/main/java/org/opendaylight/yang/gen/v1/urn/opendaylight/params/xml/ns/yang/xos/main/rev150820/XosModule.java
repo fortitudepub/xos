@@ -1,5 +1,6 @@
 package org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820;
 
+import com.xsdn.main.packet.PacketInHandler;
 import com.xsdn.main.rpc.XosRpcProvider;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
@@ -8,11 +9,19 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.SalGroupService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820.modules.module.configuration.xos.BindingAwareBroker;
+import org.opendaylight.yangtools.concepts.Registration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820.AbstractXosModule {
     private final static Logger LOG = LoggerFactory.getLogger(XosModule.class);
+    // Thread poll which will be used to process pkt in message.
+    private final ExecutorService pktInExecutor = Executors.newCachedThreadPool();
+    private PacketInHandler packetInHandler;
+    private Registration packetInListener = null;
 
     public XosModule(org.opendaylight.controller.config.api.ModuleIdentifier identifier, org.opendaylight.controller.config.api.DependencyResolver dependencyResolver) {
         super(identifier, dependencyResolver);
@@ -41,14 +50,25 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         // Register xos rpc.
         getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());
 
-        // TODO(zdy): start packet in processor and etc.
+        // TODO: install a to controller flow.
 
+        // Start the pkt in processing module.
+        // TODO: need consider the clustering case, in that case, we may ensure there are only
+        // the thread can be used process pkt in backgroud, now for simple, just process in the pkt callback.
+        //pktInExecutor.submit();
+        packetInHandler = new PacketInHandler();
+        packetInListener = notificationService.registerNotificationListener(packetInHandler);
 
         final class CloseXosResource implements AutoCloseable {
             @Override
             public void close() throws Exception {
-                // TODO(zdy): close the instance we created here if neccesary.
-                // actually we should do nothing here, because our application should run infinitely(if we made it:))
+
+                // pktInExecutor.shutdown();
+
+                if (packetInListener != null) {
+                    packetInListener.close();
+                }
+
                 return;
             }
         }
