@@ -50,7 +50,7 @@ module xos {
 
     /* TODO: limit the switch up to 2, one for master, other for slave. */
     container xos {
-        list sdn-switches {
+        list sdn-switch {
             key "sdn-switch-dpid";
             uses sdn-switch;
             description "sdn switch definition";

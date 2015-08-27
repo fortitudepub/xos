@@ -1,5 +1,6 @@
 package org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820;
 
+import com.xsdn.main.config.ConfigDataListener;
 import com.xsdn.main.packet.PacketInHandler;
 import com.xsdn.main.rpc.XosRpcProvider;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -22,6 +23,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
     private final ExecutorService pktInExecutor = Executors.newCachedThreadPool();
     private PacketInHandler packetInHandler;
     private Registration packetInListener = null;
+    private ConfigDataListener configDataListener = null;
 
     public XosModule(org.opendaylight.controller.config.api.ModuleIdentifier identifier, org.opendaylight.controller.config.api.DependencyResolver dependencyResolver) {
         super(identifier, dependencyResolver);
@@ -58,6 +60,9 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         //pktInExecutor.submit();
         packetInHandler = new PacketInHandler();
         packetInListener = notificationService.registerNotificationListener(packetInHandler);
+
+        // Register config handler.
+        configDataListener = new ConfigDataListener(dataService);
 
         final class CloseXosResource implements AutoCloseable {
             @Override
