@@ -32,6 +32,8 @@ public class ConfigDataListener implements DataChangeListener {
     {
         this.dataService = dataBroker;
 
+        // ZDY: the syntax here is called type inference, refer to java programmer guide to learn it.
+        // A good tutorial is in: https://docs.oracle.com/javase/tutorial/java/generics/index.html
         InstanceIdentifier<SdnSwitch> sdnSwInstances = InstanceIdentifier.<Xos>builder(Xos.class)
                 .<SdnSwitch>child(SdnSwitch.class).build();
         confListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION, sdnSwInstances,
