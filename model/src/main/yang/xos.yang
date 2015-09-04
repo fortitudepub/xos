@@ -10,19 +10,59 @@ module xos {
         description "Initial revision of xos model";
     }
 
-    /* Define the virtual interface type, which is used as two purpose,
-       1. as ospf virtual interface connect to the edge router
-       2. as virtual gateway for the dns servers in the subnet
-     */
-    grouping virtual-interface {
-        leaf virtual-interface-ip {
+
+    /* NOTE:
+       We will add some asiainfo related variables here, it will be abbreviated to ai. 
+
+       TODO:
+       We may support a simple LACP to form MLAG for the attached host between the intermediate L2SW
+       link may not down even OFSW down.
+    */
+
+    grouping virtual-gateway {
+        leaf virtual-gateway-ip {
+            type inet:ipv4-address;
+            description "IPv4 address of the virtual gateway interface";
+        }
+
+        leaf virtual-gateway-mac {
+            type yang:mac-address;
+            description "MAC address of the virtual gateway interface, will be used for ARP proxy and routing identification";
+        }
+    }
+
+    /* Define the host connected directly or indirectly to the SDN switch, the IP address should be
+       configured by user.
+    */
+    grouping managed-host {
+        leaf ip {
             type inet:ipv4-address;
             description "IPv4 address of the virtual interface";
         }
 
-        leaf virtual-interface-mac {
+        leaf mac {
             type yang:mac-address;
+            config false; /* This mac address is learned by using arp probe mechanism. */
             description "MAC address of the virtual interface, will be used for ARP proxy and routing identification";
+        }
+    }
+
+    /* The subnet is used to isolate learning/bridging domain, by default host in different subnet can no communicate. */
+    grouping managed-subnet {
+        leaf id {
+            type int16;
+            description "Id of the managed subnet.";
+        }
+        
+        container gateway {
+            uses virtual-gateway;
+            description "Virtual gateway of this subnet.";
+        }
+        
+        list hosts {
+            uses attached-host;
+            key "ip";
+            description "Host on this subnet.";
         }
     }
 
@@ -33,30 +73,54 @@ module xos {
             type string;
             description "SDN switch dpid in string format, this is provided by user through api";
         }
-
-        /* property of a SDN switch */
-
-        container edge-virtual-interface {
-            uses virtual-interface;
-            description "for edge router ospf connectivity";
-        }
-
-        /* TODO: may be should add a subnet id here for later support multiple subnet. */
-        container subnet-virtual-interface {
-            uses virtual-interface;
-            description "for subnet gateway";
-        }
+        
+        leaf ai-ospf-nexthop-ip {
+            type inet:ipv4-address;
+            description "The IP of the interface which have quagga ospf enabled, we spoof its mac, and use this to drop the dns anycast ip by default until load balance group is installed by client of us.";
+        }            
     }
 
-    /* TODO: limit the switch up to 2, one for master, other for slave. */
     container xos {
-        list sdn-switch {
-            key "sdn-switch-dpid";
-            uses sdn-switch;
-            description "sdn switch definition";
+        container ai-active-passive-switchset {
+            container dns {
+                leaf anycast-dns-ip {
+                    type inet:ipv4-address;
+                    description "The ipv4 anycast address this switchset will serve.";
+                }
+             }
+
+            /* The active passive switch acts as an cluster, so the subnet is managed by the cluster instead
+               of the individual switch.*/
+            list subnets {
+                use managed-subnet;
+                key "id";
+                description "Managed subnets by this cluster."
+            }
+                
+            container east {
+                container base {
+                    uses sdn-switch;
+                    description "SDN switch deployed on the west of the topology.";
+                }
+                leaf active {
+                    type boolean;
+                    description "active-passive status, true means active.";
+                }                
+            }
+
+            container west {
+                container base {
+                    uses sdn-switch;
+                    description "SDN switch deployed on the east of the topology.";
+                }
+                leaf active {
+                    type boolean;
+                    description "active-passive status, true means active.";
+                }
+            }
         }
     }
-
+    
     /* TODO: add our persistent data model here.*/
 
     rpc force-failover-switch {
