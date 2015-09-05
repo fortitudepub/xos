@@ -10,7 +10,6 @@ module xos {
         description "Initial revision of xos model";
     }
 
-
     /* NOTE:
        We will add some asiainfo related variables here, it will be abbreviated to ai. 
 
@@ -27,13 +26,14 @@ module xos {
 
         leaf virtual-gateway-mac {
             type yang:mac-address;
-            description "MAC address of the virtual gateway interface, will be used for ARP proxy and routing identification";
+            description "MAC address of the virtual gateway interface, will be used for ARP proxy and routing
+                         identification.";
         }
     }
 
     /* Define the host connected directly or indirectly to the SDN switch, the IP address should be
        configured by user.
-    */
+     */
     grouping managed-host {
         leaf ip {
             type inet:ipv4-address;
@@ -43,40 +43,45 @@ module xos {
         leaf mac {
             type yang:mac-address;
             config false; /* This mac address is learned by using arp probe mechanism. */
-            description "MAC address of the virtual interface, will be used for ARP proxy and routing identification";
+            description "MAC address of the virtual interface, will be used for ARP proxy and routing
+                         identification.";
         }
     }
 
-    /* The subnet is used to isolate learning/bridging domain, by default host in different subnet can no communicate. */
+    /* The subnet is used to isolate learning/bridging domain, by default host in different subnet can not
+       communicate with each other. */
     grouping managed-subnet {
+        /* Use id as key does not provide any isolation for the case virtual-gateway and host ip overlaps,
+           we should put some contraint here. */
         leaf id {
             type int16;
             description "Id of the managed subnet.";
         }
-        
-        container gateway {
+
+        container virtual-gateway {
             uses virtual-gateway;
             description "Virtual gateway of this subnet.";
         }
         
         list hosts {
-            uses attached-host;
+            uses managed-host;
             key "ip";
             description "Host on this subnet.";
         }
     }
 
     grouping sdn-switch {
-        description "Abstract represe   ntation of a SDN switch";
+        description "Abstract representation of a SDN switch.";
 
-        leaf sdn-switch-dpid {
+        leaf dpid {
             type string;
-            description "SDN switch dpid in string format, this is provided by user through api";
+            description "SDN switch dpid in string format, this is provided by user through api.";
         }
         
         leaf ai-ospf-nexthop-ip {
             type inet:ipv4-address;
-            description "The IP of the interface which have quagga ospf enabled, we spoof its mac, and use this to drop the dns anycast ip by default until load balance group is installed by client of us.";
+            description "The IP of the interface which have quagga ospf enabled, we spoof its mac, and use this to
+                         drop the dns anycast ip by default until load balance group is installed by client of us.";
         }            
     }
 
@@ -91,10 +96,10 @@ module xos {
 
             /* The active passive switch acts as an cluster, so the subnet is managed by the cluster instead
                of the individual switch.*/
-            list subnets {
-                use managed-subnet;
+            list managed-subnets {
+                uses managed-subnet;
                 key "id";
-                description "Managed subnets by this cluster."
+                description "Managed subnets by this cluster.";
             }
                 
             container east {
