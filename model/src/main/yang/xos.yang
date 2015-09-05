@@ -103,24 +103,34 @@ module xos {
             }
                 
             container east {
-                container base {
+                container east-switch {
                     uses sdn-switch;
                     description "SDN switch deployed on the west of the topology.";
+
+                    must "dpid != ''" {
+                        error-message "dpid must not be empty.";
+                    }
                 }
                 leaf active {
                     type boolean;
                     description "active-passive status, true means active.";
+                    config false;
                 }                
             }
 
             container west {
-                container base {
+                container west-switch {
                     uses sdn-switch;
                     description "SDN switch deployed on the east of the topology.";
+
+                    must "dpid != ''" {
+                        error-message "dpid must not be empty.";
+                    }
                 }
                 leaf active {
                     type boolean;
                     description "active-passive status, true means active.";
+                    config false;
                 }
             }
         }

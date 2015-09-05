@@ -14,14 +14,15 @@ module xos-main {
             "Initial revision";
     }
 
-    identity xos {
+    /* Rename this to xos-main to solve conflict with xos.yang data model. */
+    identity xos-main {
         base config:module-type;
         config:java-name-prefix Xos;
     }
 
     augment "/config:modules/config:module/config:configuration" {
-        case xos {
-            when "/config:modules/config:module/config:type = 'xos'";
+        case xos-main {
+            when "/config:modules/config:module/config:type = 'xos-main'";
 
             container data-broker {
                 uses config:service-ref {
