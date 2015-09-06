@@ -1,8 +1,12 @@
 package org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820;
 
+import akka.actor.ActorSystem;
+import akka.osgi.BundleDelegatingClassLoader;
+import com.typesafe.config.ConfigFactory;
 import com.xsdn.main.config.ConfigDataListener;
 import com.xsdn.main.packet.PacketInHandler;
 import com.xsdn.main.rpc.XosRpcProvider;
+import com.xsdn.main.sw.SdnSwitchManager;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
@@ -11,6 +15,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.Sal
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820.modules.module.configuration.xos.main.BindingAwareBroker;
 import org.opendaylight.yangtools.concepts.Registration;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +55,18 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         PacketProcessingService packetProcessingService =
                 rpcRegistryDependency.getRpcService(PacketProcessingService.class);
 
+        // Initialize actor system.
+        BundleContext bundleContext =
+                BundleReference.class.cast(XosModule.class.getClassLoader())
+                        .getBundle()
+                        .getBundleContext();
+        BundleDelegatingClassLoader classLoader = new BundleDelegatingClassLoader(bundleContext.getBundle(),
+                Thread.currentThread().getContextClassLoader());
+        final ActorSystem system = ActorSystem.create("XosActorSystem", ConfigFactory.load(classLoader), classLoader);
+
+        // Create west and east sdn switch actor.
+        final SdnSwitchManager sdnSwitchManager = new SdnSwitchManager(system);
+
         // Register xos rpc.
         getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());
 
@@ -62,7 +80,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         packetInListener = notificationService.registerNotificationListener(packetInHandler);
 
         // Register config handler.
-        configDataListener = new ConfigDataListener(dataService);
+        configDataListener = new ConfigDataListener(sdnSwitchManager, dataService);
 
         final class CloseXosResource implements AutoCloseable {
             @Override
