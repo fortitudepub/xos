@@ -23,9 +23,9 @@ public class SdnSwitchManager {
          * TODO: let 50ms to be configurable. */
         SdnSwitchActor.ProbeArpOnce probeArpOnce = new SdnSwitchActor.ProbeArpOnce();
         Cancellable _cl1 =  system.scheduler().schedule(Duration.Zero(),
-                Duration.create(50, TimeUnit.MILLISECONDS), westActorRef, probeArpOnce, system.dispatcher(), null);
+                Duration.create(5000, TimeUnit.MILLISECONDS), westActorRef, probeArpOnce, system.dispatcher(), null);
         Cancellable _cl2 =  system.scheduler().schedule(Duration.Zero(),
-                Duration.create(50, TimeUnit.MILLISECONDS), eastActorRef, probeArpOnce, system.dispatcher(), null);
+                Duration.create(5000, TimeUnit.MILLISECONDS), eastActorRef, probeArpOnce, system.dispatcher(), null);
     }
 
     public ActorRef getWestSdnSwitchActor() {
