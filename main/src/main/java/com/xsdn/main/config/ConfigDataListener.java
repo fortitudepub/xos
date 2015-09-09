@@ -7,8 +7,11 @@ import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.ManagedSubnet;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.Xos;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.AiActivePassiveSwitchset;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.AiManagedSubnet;;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.AiManagedSubnetKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.East;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.West;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.east.EastSwitch;
@@ -29,6 +32,7 @@ public class ConfigDataListener implements DataChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigDataListener.class);
     private final DataBroker dataService;
     private Registration westSwitchConfListener;
+    private Registration managedSubnetsConfListener;
     private Registration eastSwitchConfListener;
     private SdnSwitchManager sdnSwitchManager;
 
@@ -47,11 +51,18 @@ public class ConfigDataListener implements DataChangeListener {
                 .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
                 .<East>child(East.class)
                 .<EastSwitch>child(EastSwitch.class).build();
+        InstanceIdentifier<AiManagedSubnet> managedSubnetIID = InstanceIdentifier.<Xos>builder(Xos.class)
+                .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
+                .<AiManagedSubnet>child(AiManagedSubnet.class).build();
 
-        westSwitchConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION, westSwitchIID,
-                this, AsyncDataBroker.DataChangeScope.BASE);
-        eastSwitchConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION, eastSwitchIID,
-                this, AsyncDataBroker.DataChangeScope.BASE);
+
+        westSwitchConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
+                westSwitchIID, this, AsyncDataBroker.DataChangeScope.BASE);
+        eastSwitchConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
+                eastSwitchIID, this, AsyncDataBroker.DataChangeScope.BASE);
+        managedSubnetsConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
+                managedSubnetIID, this, AsyncDataBroker.DataChangeScope.BASE);
+
 
         LOG.info("XOS finished registered data change listeners");
 
@@ -70,6 +81,10 @@ public class ConfigDataListener implements DataChangeListener {
             eastSwitchConfListener.close();
         }
 
+        if (managedSubnetsConfListener != null)
+        {
+            managedSubnetsConfListener.close();
+        }
 
         return;
     }
@@ -77,35 +92,41 @@ public class ConfigDataListener implements DataChangeListener {
 
     private void processInstanceId(InstanceIdentifier instanceId, DataObject data, boolean updDelFlag)
     {
-        LOG.debug ("entering processInstanceId");
-        if (instanceId.getTargetType().equals(WestSwitch.class))
-        {
-            WestSwitch westSw = (WestSwitch) data;
+        if (updDelFlag) {
+            LOG.debug("entering processInstanceId");
+            if (instanceId.getTargetType().equals(WestSwitch.class)) {
+                WestSwitch westSw = (WestSwitch) data;
 
-            LOG.info("New west sdn switch added " + westSw.getDpid());
+                LOG.info("New west sdn switch added " + westSw.getDpid());
 
-            SdnSwitchActor.DpIdCreated dpIdCreated= new SdnSwitchActor.DpIdCreated(westSw.getDpid());
-            this.sdnSwitchManager.getEastSdnSwitchActor().tell(dpIdCreated, null);
+                this.sdnSwitchManager.getEastSdnSwitchActor()
+                        .tell(new SdnSwitchActor.DpIdCreated(westSw.getDpid()), null);
+            } else if (instanceId.getTargetType().equals(EastSwitch.class)) {
+                EastSwitch eastSw = (EastSwitch) data;
+
+                LOG.info("New east sdn switch added " + eastSw.getDpid());
+
+                this.sdnSwitchManager.getEastSdnSwitchActor()
+                        .tell(new SdnSwitchActor.DpIdCreated(eastSw.getDpid()), null);
+
+            } else if (instanceId.getTargetType().equals(AiManagedSubnet.class)) {
+                LOG.info("New subnet added");
+
+                AiManagedSubnet managedSubnet = (AiManagedSubnet)data;
+                this.sdnSwitchManager.getEastSdnSwitchActor()
+                        .tell(new SdnSwitchActor.ManagedSubnetUpdate(managedSubnet, false), null);
+                this.sdnSwitchManager.getWestSdnSwitchActor()
+                        .tell(new SdnSwitchActor.ManagedSubnetUpdate(managedSubnet, false), null);
+            }
         }
-        else if (instanceId.getTargetType().equals(EastSwitch.class))
-        {
-            EastSwitch eastSw = (EastSwitch) data;
-
-            LOG.info("New east sdn switch added " + eastSw.getDpid());
-
-            SdnSwitchActor.DpIdCreated dpIdCreated= new SdnSwitchActor.DpIdCreated(eastSw.getDpid());
-            this.sdnSwitchManager.getEastSdnSwitchActor().tell(dpIdCreated, null);
+        else {
+            // TODO: process delete.
         }
-
-        // TODO: dispatch other instance data changes...
     }
 
     @Override
     public void onDataChanged(AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> dataChangeEvent)
     {
-        // ZDY: we should create SDN switch object (may be as an Akka actor) here to abstract the logic.
-
-
         // ZDY: and also we should take leadership into consideration here, only the leader application instance
         // should manage the SDN switch, or we can delegate the work to the SDN switch, let it decide according
         // the leadership.
@@ -116,12 +137,33 @@ public class ConfigDataListener implements DataChangeListener {
         }
 
         Map<InstanceIdentifier<?>, DataObject> createdData = dataChangeEvent.getCreatedData();
+        Map<InstanceIdentifier<?>, DataObject> updatedData = dataChangeEvent.getUpdatedData();
+        Set<InstanceIdentifier<?>> removedData = dataChangeEvent.getRemovedPaths();
+        Map<InstanceIdentifier<?>, DataObject> originalData = dataChangeEvent.getOriginalData();
+
         if ((createdData != null) && !(createdData.isEmpty()))
         {
             Set<InstanceIdentifier<?>> createdSet = createdData.keySet();
             for (InstanceIdentifier<?> instanceId : createdSet)
             {
-                processInstanceId(instanceId, createdData.get(instanceId), true);
+                processInstanceId (instanceId, createdData.get(instanceId), true);
+            }
+        }
+
+        if ((updatedData != null) && !(updatedData.isEmpty()))
+        {
+            Set<InstanceIdentifier<?>> updatedSet = updatedData.keySet();
+            for (InstanceIdentifier<?> instanceId : updatedSet)
+            {
+                processInstanceId (instanceId, updatedData.get(instanceId), true);
+            }
+        }
+
+        if ((removedData != null) && (!removedData.isEmpty()) && (originalData != null) && (!originalData.isEmpty()))
+        {
+            for (InstanceIdentifier<?> instanceId : removedData)
+            {
+                processInstanceId (instanceId, originalData.get(instanceId), false);
             }
         }
     }

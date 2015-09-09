@@ -13,6 +13,27 @@ module xos {
     /* NOTE:
        We will add some asiainfo related variables here, it will be abbreviated to ai. 
 
+       NOTE_ZDY:
+       I suggest use ai- prefix for data tree node of list type as naming convention to solve the following
+       problem:
+
+       For example we have the following data definition:
+
+       list tests {
+            uses test;
+       }
+
+       YANG-TOOLS generated Tests class to abstract the list member, however, there is also a Test class which
+       means the test type, this will cause confusing for us when we programming or reading other code.
+
+       The list name is also suggested to does not keep the postfix 's', otherwise the generated list
+       member class will also have the 's' postfix, which seems no reasonable as a singular.
+
+       So the desired definition should be
+       list ai-test {
+            uses test;
+       }
+
        TODO:
        We may support a simple LACP to form MLAG for the attached host between the intermediate L2SW
        link may not down even OFSW down.
@@ -35,12 +56,12 @@ module xos {
        configured by user.
      */
     grouping managed-host {
-        leaf ip {
+        leaf managed-host-ip {
             type inet:ipv4-address;
             description "IPv4 address of the virtual interface";
         }
 
-        leaf mac {
+        leaf managed-host-mac {
             type yang:mac-address;
             config false; /* This mac address is learned by using arp probe mechanism. */
             description "MAC address of the virtual interface, will be used for ARP proxy and routing
@@ -53,7 +74,7 @@ module xos {
     grouping managed-subnet {
         /* Use id as key does not provide any isolation for the case virtual-gateway and host ip overlaps,
            we should put some contraint here. */
-        leaf id {
+        leaf subnet-id {
             type int16;
             description "Id of the managed subnet.";
         }
@@ -63,9 +84,9 @@ module xos {
             description "Virtual gateway of this subnet.";
         }
         
-        list hosts {
+        list subnet-host {
             uses managed-host;
-            key "ip";
+            key "managed-host-ip";
             description "Host on this subnet.";
         }
     }
@@ -95,10 +116,10 @@ module xos {
              }
 
             /* The active passive switch acts as an cluster, so the subnet is managed by the cluster instead
-               of the individual switch.*/
-            list managed-subnets {
+               of the individual switch. */
+            list ai-managed-subnet {
                 uses managed-subnet;
-                key "id";
+                key "subnet-id";
                 description "Managed subnets by this cluster.";
             }
                 
@@ -111,6 +132,7 @@ module xos {
                         error-message "dpid must not be empty.";
                     }
                 }
+
                 leaf active {
                     type boolean;
                     description "active-passive status, true means active.";
