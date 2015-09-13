@@ -4,7 +4,7 @@ import akka.actor.ActorSystem;
 import akka.osgi.BundleDelegatingClassLoader;
 import com.typesafe.config.ConfigFactory;
 import com.xsdn.main.config.ConfigDataListener;
-import com.xsdn.main.packet.PacketInHandler;
+import com.xsdn.main.packet.PacketInListener;
 import com.xsdn.main.rpc.XosRpcProvider;
 import com.xsdn.main.sw.SdnSwitchManager;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -13,7 +13,6 @@ import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.SalGroupService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820.modules.module.configuration.xos.main.BindingAwareBroker;
 import org.opendaylight.yangtools.concepts.Registration;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleReference;
@@ -27,7 +26,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
     private final static Logger LOG = LoggerFactory.getLogger(XosModule.class);
     // Thread poll which will be used to process pkt in message.
     private final ExecutorService pktInExecutor = Executors.newCachedThreadPool();
-    private PacketInHandler packetInHandler;
+    private PacketInListener packetInHandler;
     private Registration packetInListener = null;
     private ConfigDataListener configDataListener = null;
 
@@ -76,7 +75,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         // TODO: need consider the clustering case, in that case, we may ensure there are only
         // the thread can be used process pkt in backgroud, now for simple, just process in the pkt callback.
         //pktInExecutor.submit();
-        packetInHandler = new PacketInHandler();
+        packetInHandler = new PacketInListener(sdnSwitchManager);
         packetInListener = notificationService.registerNotificationListener(packetInHandler);
 
         // Register config handler.

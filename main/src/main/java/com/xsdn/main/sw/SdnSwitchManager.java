@@ -4,6 +4,9 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.actor.Props;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
@@ -12,6 +15,12 @@ import java.util.concurrent.TimeUnit;
  * Created by fortitude on 15-9-6.
  */
 public class SdnSwitchManager {
+    private static final Logger LOG = LoggerFactory.getLogger(SdnSwitchManager.class);
+
+    private static final String OPENFLOW_DOMAIN = "openflow:";
+
+    NodeId westSdnSwitchNodeId = null;
+    NodeId eastSdnSwitchNodeId = null;
     final ActorRef westActorRef;
     final ActorRef eastActorRef;
 
@@ -34,5 +43,48 @@ public class SdnSwitchManager {
 
     public ActorRef getEastSdnSwitchActor() {
         return eastActorRef;
+    }
+
+    // Set dpid to null clear the dpid
+    public void setWestSdnSwitchDpid(String dpid) {
+        if (!dpid.equals("")) {
+            try {
+                String nodeIdUri = OPENFLOW_DOMAIN + Long.parseLong(dpid, 16);
+                westSdnSwitchNodeId = new NodeId(nodeIdUri);
+            } catch (NumberFormatException e) {
+                LOG.error("Configured dpid " + dpid + " is invalid");
+                westSdnSwitchNodeId = null;
+            }
+        }
+        else {
+            westSdnSwitchNodeId = null;
+        }
+    }
+
+    public void setEastSdnSwitchDpid(String dpid) {
+        if (!dpid.equals("")) {
+            try {
+                String nodeIdUri = OPENFLOW_DOMAIN + Long.parseLong(dpid, 16);
+                westSdnSwitchNodeId = new NodeId(nodeIdUri);
+            } catch (NumberFormatException e) {
+                LOG.error("Configured dpid " + dpid + " is invalid");
+                westSdnSwitchNodeId = null;
+            }
+        }
+        else {
+            westSdnSwitchNodeId = null;
+        }
+    }
+
+    public ActorRef getSdnSwitchByNodeId(NodeId nodeId) {
+        if (nodeId.equals(westSdnSwitchNodeId)) {
+            return westActorRef;
+        }
+
+        if (nodeId.equals(eastSdnSwitchNodeId)) {
+            return eastActorRef;
+        }
+
+        return null;
     }
 }
