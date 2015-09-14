@@ -4,7 +4,7 @@ import akka.actor.ActorSystem;
 import akka.osgi.BundleDelegatingClassLoader;
 import com.typesafe.config.ConfigFactory;
 import com.xsdn.main.config.ConfigDataListener;
-import com.xsdn.main.packet.PacketInListener;
+import com.xsdn.main.packet.ArpPacketHandler;
 import com.xsdn.main.rpc.XosRpcProvider;
 import com.xsdn.main.sw.SdnSwitchManager;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -26,8 +26,8 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
     private final static Logger LOG = LoggerFactory.getLogger(XosModule.class);
     // Thread poll which will be used to process pkt in message.
     private final ExecutorService pktInExecutor = Executors.newCachedThreadPool();
-    private PacketInListener packetInHandler;
-    private Registration packetInListener = null;
+    private ArpPacketHandler arpPacketHandler;
+    private Registration arpPacketInListener = null;
     private ConfigDataListener configDataListener = null;
 
     public XosModule(org.opendaylight.controller.config.api.ModuleIdentifier identifier, org.opendaylight.controller.config.api.DependencyResolver dependencyResolver) {
@@ -71,12 +71,10 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
 
         // TODO: install a to controller flow.
 
-        // Start the pkt in processing module.
-        // TODO: need consider the clustering case, in that case, we may ensure there are only
-        // the thread can be used process pkt in backgroud, now for simple, just process in the pkt callback.
-        //pktInExecutor.submit();
-        packetInHandler = new PacketInListener(sdnSwitchManager);
-        packetInListener = notificationService.registerNotificationListener(packetInHandler);
+
+        // Register packet dispatcher.
+        arpPacketHandler = new ArpPacketHandler(sdnSwitchManager);
+        arpPacketInListener = notificationService.registerNotificationListener(arpPacketHandler);
 
         // Register config handler.
         configDataListener = new ConfigDataListener(sdnSwitchManager, dataService);
@@ -87,8 +85,8 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
 
                 // pktInExecutor.shutdown();
 
-                if (packetInListener != null) {
-                    packetInListener.close();
+                if (arpPacketInListener != null) {
+                    arpPacketInListener.close();
                 }
 
                 return;

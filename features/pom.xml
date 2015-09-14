@@ -32,6 +32,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
     <yangtools.version>0.7.0-Lithium</yangtools.version>
     <openflow.plugin.version>0.1.0-Lithium</openflow.plugin.version>
     <dlux.version>0.2.0-Lithium</dlux.version>
+    <l2switch.version>0.2.0-Lithium</l2switch.version>
     <configfile.directory>etc/opendaylight/karaf</configfile.directory>
     <features.file>features.xml</features.file>
   </properties>
@@ -62,6 +63,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
       <groupId>org.opendaylight.dlux</groupId>
       <artifactId>features-dlux</artifactId>
       <version>${dlux.version}</version>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.l2switch</groupId>
+      <artifactId>features-l2switch</artifactId>
+      <version>${l2switch.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>

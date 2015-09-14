@@ -28,6 +28,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <!-- same as in lithium odl -->
     <scala.version>2.10</scala.version>
     <akka.version>2.3.10</akka.version>
+    <l2switch.version>0.2.0-Lithium</l2switch.version>
   </properties>
 
   <dependencies>
@@ -46,6 +47,17 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <dependency>
       <groupId>org.opendaylight.openflowplugin.model</groupId>
       <artifactId>model-flow-service</artifactId>
+    </dependency>
+    <!-- some of l2switch components -->
+    <dependency>
+      <groupId>org.opendaylight.l2switch.packethandler</groupId>
+      <artifactId>packethandler-model</artifactId>
+      <version>${l2switch.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.l2switch.packethandler</groupId>
+      <artifactId>packethandler-impl</artifactId>
+      <version>${l2switch.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>

@@ -17,7 +17,23 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <!-- ZDY: we run our app within ODL, so we can use binding instead of dom api. -->
 
     <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+
+	  <!-- provide default configuration for packet-handler-impl which we depend from l2switch project. -->
       <modules xmlns="urn:opendaylight:params:xml:ns:yang:controller:config">
+        <module>
+          <type xmlns:prefix="urn:opendaylight:packet:packet-handler-impl">
+            prefix:packet-handler-impl
+          </type>
+          <name>packet-handler-impl</name>
+
+          <notification-service>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+              binding:binding-notification-service
+            </type>
+            <name>binding-notification-broker</name>
+          </notification-service>
+        </module>
+		
         <module>
           <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:xos:main">prefix:xos-main</type>
           <name>xos-default</name>
@@ -45,8 +61,12 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
             </type>
             <name>binding-osgi-broker</name>
           </binding-aware-broker>
-	</module>
+		</module>
       </modules>
     </data>
   </configuration>
+
+  <required-capabilities>
+    <capability>urn:opendaylight:packet:packet-handler-impl?module=packet-handler-impl&amp;revision=2014-05-28</capability>
+  </required-capabilities>
 </snapshot>
