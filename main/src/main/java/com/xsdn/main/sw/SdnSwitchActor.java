@@ -1,19 +1,38 @@
 package com.xsdn.main.sw;
 
+import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.japi.Creator;
+import com.google.common.base.Preconditions;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.KnownOperation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.arp.packet.received.packet.chain.packet.ArpPacket;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.packet.received.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.AiManagedSubnet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * Created by fortitude on 15-8-23.
  */
 public class SdnSwitchActor extends UntypedActor {
     private static final Logger LOG = LoggerFactory.getLogger(SdnSwitchActor.class);
+    private static final HashMap subnetMap = new HashMap(50); // TODO: 50 is a arbitrary number now.
+    private PacketProcessingService packetProcessingService = null;
+
+    private SdnSwitchActor(final PacketProcessingService packetProcessingService) {
+        this.packetProcessingService = Preconditions.checkNotNull(packetProcessingService);
+    }
 
     // Define messages which will be processed by this actor.
     static public class DpIdCreated {
@@ -36,9 +55,11 @@ public class SdnSwitchActor extends UntypedActor {
 
     static public class ManagedSubnetUpdate {
         private AiManagedSubnet subnet;
+        boolean delete;
 
         public ManagedSubnetUpdate(AiManagedSubnet subnet, boolean delete) {
             this.subnet = subnet;
+            this.delete = delete;
         }
     }
 
@@ -61,9 +82,73 @@ public class SdnSwitchActor extends UntypedActor {
         // 4. implement master-slave decide logic
     }
 
-    private void processArp(ArpPacketIn pktIn)  {
+    private void processSubnetUpdate(ManagedSubnetUpdate subnetUpdate)  {
+        // TODO: this code need to be refactored because I only want to extract the subnet information
+        // more santity check need to be done.
+        // And also, we should build a auxiliary map that use the virtual gateway ip as index to help
+        // do the arp proxy.
+        // We should not try to read data from the data store directly because the transaction read is slow.
+        if (!subnetUpdate.delete) {
+            this.subnetMap.put(subnetUpdate.subnet.getKey().getSubnetId(), subnetUpdate.subnet);
+        } else {
+            this.subnetMap.remove(subnetUpdate.subnet.getKey().getSubnetId());
+            this.subnetMap.put(subnetUpdate.subnet.getKey().getSubnetId(), subnetUpdate.subnet);
+        }
+    }
+
+    private boolean processArpReqForVGW(ArpPacketIn pktIn) {
         String dip = pktIn.pkt.getDestinationProtocolAddress();
-        LOG.info("XXX: process dip " + dip + " arp request");
+        Ipv4Address dIPv4 = new Ipv4Address(dip);
+        boolean isVGWARP = false;
+        MacAddress vMAC = null;
+
+        // Locate whether this arp request is for
+        Iterator it = this.subnetMap.entrySet().iterator();
+        while (it.hasNext()) {
+            AiManagedSubnet subnet = (AiManagedSubnet)it.next();
+            if ((subnet.getVirtualGateway() != null) && (subnet.getVirtualGateway().getVirtualGatewayIp() != null)
+                && (subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4)))
+            {
+                isVGWARP = true;
+                vMAC = subnet.getVirtualGateway().getVirtualGatewayMac();
+                break;
+            }
+        }
+
+        if (false == isVGWARP) {
+            return false;
+        }
+
+        if (pktIn.pkt.getOperation() != KnownOperation.Request) {
+            LOG.error("Received bad arp packet for the vGW ip " + dip);
+            return true; // It should be handled by us, but it's not request.
+        }
+
+        if (vMAC != null) {
+            /* TODO: fix this code, need add arp construction logic.
+            TransmitPacketInput arpReply = new TransmitPacketInputBuilder()
+                    .setPayload(payload)
+                    .setNode(new NodeRef(egressNodePath))
+                    .setEgress(pktIn.nodeId)
+                    .build();
+
+            packetProcessingService.transmitPacket(arpReply);
+            */
+        }
+
+        return true;
+    }
+
+    private void processArp(ArpPacketIn pktIn)  {
+        boolean vgwHandled = false;
+        // Handle arp request for vmac
+        vgwHandled = processArpReqForVGW(pktIn);
+        if (vgwHandled) {
+            return;
+        }
+
+
+        // TODO: add arp snooping logic (by WEIZJ).
     }
 
     public void onReceive(Object message) throws Exception {
@@ -72,11 +157,28 @@ public class SdnSwitchActor extends UntypedActor {
         } else if (message instanceof ProbeArpOnce) {
             LOG.info("TO BE IMPLEMENTED: ARP PROBE");
         } else if (message instanceof  ManagedSubnetUpdate) {
-            LOG.info("Process managed subnet update, I will develop GW ARP proxy soon.");
+            processSubnetUpdate((ManagedSubnetUpdate)message);
         } else if (message instanceof  ArpPacketIn) {
             processArp((ArpPacketIn)message);
         } else {
             unhandled(message);
+        }
+    }
+
+    public static Props props(final PacketProcessingService packetProcessingService) {
+        return Props.create(new SdnSwitchActorCreator(packetProcessingService));
+    }
+
+    private static final class SdnSwitchActorCreator implements Creator<SdnSwitchActor> {
+        private final PacketProcessingService packetProcessingService;
+
+        SdnSwitchActorCreator(final PacketProcessingService packetProcessingService) {
+            this.packetProcessingService = Preconditions.checkNotNull(packetProcessingService);
+        }
+
+        @Override
+        public SdnSwitchActor create() {
+            return new SdnSwitchActor(packetProcessingService);
         }
     }
 }

@@ -64,7 +64,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         final ActorSystem system = ActorSystem.create("XosActorSystem", ConfigFactory.load(classLoader), classLoader);
 
         // Create west and east sdn switch actor.
-        final SdnSwitchManager sdnSwitchManager = new SdnSwitchManager(system);
+        final SdnSwitchManager sdnSwitchManager = new SdnSwitchManager(system, packetProcessingService);
 
         // Register xos rpc.
         getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());

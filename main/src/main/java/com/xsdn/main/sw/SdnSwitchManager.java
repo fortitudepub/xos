@@ -5,6 +5,8 @@ import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.actor.Props;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import com.xsdn.main.sw.SdnSwitchActor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.duration.Duration;
@@ -24,9 +26,9 @@ public class SdnSwitchManager {
     final ActorRef westActorRef;
     final ActorRef eastActorRef;
 
-    public SdnSwitchManager(ActorSystem system) {
-        westActorRef = system.actorOf(Props.create(SdnSwitchActor.class), "westActor");
-        eastActorRef = system.actorOf(Props.create(SdnSwitchActor.class), "eastActor");
+    public SdnSwitchManager(ActorSystem system, PacketProcessingService packetProcessingService) {
+        westActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService));
+        eastActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService));
 
         /* Send periodical arp probe message to trigger arp probe and mac learning.
          * TODO: let 50ms to be configurable. */
