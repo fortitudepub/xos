@@ -29,6 +29,8 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <scala.version>2.10</scala.version>
     <akka.version>2.3.10</akka.version>
     <l2switch.version>0.2.0-Lithium</l2switch.version>
+    <adsal.version>0.9.0-Lithium</adsal.version>
+    <jackson.version>2.3.2</jackson.version>
   </properties>
 
   <dependencies>
@@ -44,6 +46,14 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal-binding-config</artifactId>
     </dependency>
+
+    <!-- ODL AD-SAL, we only use the packet serializer -->
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal</artifactId>
+      <version>${adsal.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.opendaylight.openflowplugin.model</groupId>
       <artifactId>model-flow-service</artifactId>
@@ -63,6 +73,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       <groupId>${project.groupId}</groupId>
       <artifactId>xos-model</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- Jackson, also used for packet serializer -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <!-- Akka -->
@@ -113,6 +130,18 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <!-- BETTER to embed sal directly, we do not want to use adsal feature which seems pollute our code,
+                 maybe we will finally remove sal(we only use packet package) directly.
+                 However, due to complicated dependencies, currently we import sal features, hope we will
+                 have a chance to remove it from our project.
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Import-Package>*,!org.opendaylight.controller</Import-Package>
+            <Embed-Dependency>sal</Embed-Dependency>
+            -->
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.opendaylight.yangtools</groupId>

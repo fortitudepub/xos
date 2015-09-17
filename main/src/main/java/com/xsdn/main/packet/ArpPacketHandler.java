@@ -60,7 +60,7 @@ public class ArpPacketHandler implements ArpPacketListener {
                 firstKeyOf(Node.class, NodeKey.class).getId();;
         switchRef = sdnSwitchManager.getSdnSwitchByNodeId(nodeId);
         if (switchRef != null) {
-            switchRef.tell(new SdnSwitchActor.ArpPacketIn(nodeId, arpPacket), null);
+            switchRef.tell(new SdnSwitchActor.ArpPacketIn(nodeId, rawPacket, arpPacket), null);
         } else {
             LOG.debug("ARP packet received from a unconfigured SDN switch, received node id is " + nodeId);
         }

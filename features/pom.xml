@@ -33,15 +33,17 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
     <openflow.plugin.version>0.1.0-Lithium</openflow.plugin.version>
     <dlux.version>0.2.0-Lithium</dlux.version>
     <l2switch.version>0.2.0-Lithium</l2switch.version>
+    <adsal.version>0.9.0-Lithium</adsal.version>
+    <jackson.version>2.3.2</jackson.version>
     <configfile.directory>etc/opendaylight/karaf</configfile.directory>
     <features.file>features.xml</features.file>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.opendaylight.openflowplugin</groupId>
-      <artifactId>features-openflowplugin</artifactId>
-      <version>${openflow.plugin.version}</version>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>features-adsal</artifactId>
+      <version>${adsal.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
@@ -63,6 +65,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
       <groupId>org.opendaylight.dlux</groupId>
       <artifactId>features-dlux</artifactId>
       <version>${dlux.version}</version>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>features-openflowplugin</artifactId>
+      <version>${openflow.plugin.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>

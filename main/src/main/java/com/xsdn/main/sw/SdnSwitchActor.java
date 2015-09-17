@@ -4,30 +4,39 @@ import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.japi.Creator;
 import com.google.common.base.Preconditions;
+import com.xsdn.main.packet.ArpPacketBuilder;
+import com.xsdn.main.util.EtherAddress;
+import com.xsdn.main.util.Ip4Network;
+import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.KnownOperation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.arp.packet.received.packet.chain.packet.ArpPacket;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.basepacket.rev140528.packet.chain.grp.packet.chain.packet.RawPacket;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.packet.received.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.AiManagedSubnet;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map.Entry;
 
 /**
  * Created by fortitude on 15-8-23.
  */
 public class SdnSwitchActor extends UntypedActor {
     private static final Logger LOG = LoggerFactory.getLogger(SdnSwitchActor.class);
-    private static final HashMap subnetMap = new HashMap(50); // TODO: 50 is a arbitrary number now.
+    private static final HashMap<Short, AiManagedSubnet> subnetMap = new HashMap(50); // TODO: 50 is a arbitrary number now.
     private PacketProcessingService packetProcessingService = null;
 
     private SdnSwitchActor(final PacketProcessingService packetProcessingService) {
@@ -65,11 +74,13 @@ public class SdnSwitchActor extends UntypedActor {
 
     static public class ArpPacketIn {
         private NodeId nodeId;
+        private RawPacket rawPkt;
         private ArpPacket pkt;
 
-        public ArpPacketIn(NodeId nodeId, ArpPacket pkt) {
+        public ArpPacketIn(NodeId nodeId, RawPacket rawPkt, ArpPacket pkt) {
             // Record node id for possible usage later.
             this.nodeId = nodeId;
+            this.rawPkt = rawPkt;
             this.pkt = pkt;
         }
     }
@@ -103,9 +114,10 @@ public class SdnSwitchActor extends UntypedActor {
         MacAddress vMAC = null;
 
         // Locate whether this arp request is for
-        Iterator it = this.subnetMap.entrySet().iterator();
+        Iterator<Entry<Short, AiManagedSubnet>> it = this.subnetMap.entrySet().iterator();
         while (it.hasNext()) {
-            AiManagedSubnet subnet = (AiManagedSubnet)it.next();
+            Entry<Short, AiManagedSubnet> entry = it.next();
+            AiManagedSubnet subnet = entry.getValue();
             if ((subnet.getVirtualGateway() != null) && (subnet.getVirtualGateway().getVirtualGatewayIp() != null)
                 && (subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4)))
             {
@@ -125,15 +137,32 @@ public class SdnSwitchActor extends UntypedActor {
         }
 
         if (vMAC != null) {
-            /* TODO: fix this code, need add arp construction logic.
-            TransmitPacketInput arpReply = new TransmitPacketInputBuilder()
-                    .setPayload(payload)
-                    .setNode(new NodeRef(egressNodePath))
-                    .setEgress(pktIn.nodeId)
-                    .build();
+            // No VLAN in ai deployment.
 
-            packetProcessingService.transmitPacket(arpReply);
-            */
+            try {
+                //Build a random arp packet
+                // TODO: fix me, just for test send arp packet.
+                EtherAddress src = new EtherAddress(0x001122aabbccL);
+                EtherAddress dst = EtherAddress.BROADCAST;
+                InetAddress target = InetAddress.getByName("10.1.2.3");
+                InetAddress ip6 = InetAddress.getByName("::1");
+                Ip4Network spa = new Ip4Network(0);
+                Ip4Network tpa = new Ip4Network(target);
+                ArpPacketBuilder builder = new ArpPacketBuilder();
+                Ethernet ether = builder.build(src, target);
+
+                InstanceIdentifier<Node> node = pktIn.rawPkt.getIngress().getValue().firstIdentifierOf(Node.class);
+
+                TransmitPacketInput arpReply = new TransmitPacketInputBuilder()
+                        .setPayload(ether.serialize())
+                        .setNode(new NodeRef(node))
+                        .setEgress(pktIn.rawPkt.getIngress())
+                        .build();
+
+                packetProcessingService.transmitPacket(arpReply);
+            } catch (Exception e) {
+                // TODO: remove later.
+            }
         }
 
         return true;

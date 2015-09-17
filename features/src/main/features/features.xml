@@ -11,6 +11,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
   <repository>mvn:org.opendaylight.yangtools/features-yangtools/${yangtools.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-adsal/${adsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-mdsal/${mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-restconf/${mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${openflow.plugin.version}/xml/features</repository>
@@ -20,6 +21,10 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <bundle>mvn:com.xsdn/xos-model/${project.version}</bundle>
   </feature>
   <feature name='xsdn-xos' version='${project.version}' description='XSDN :: xos'>
+    <!-- ZDY_NOTE: when we add new dependency feature here, must add the dependency to pom.xml of xos-features,otherwise
+      the distribution karaf will does not have the repository copied to the karaf/system directory,
+       also we should add the corresponding feature repository on top of this xml. -->
+    <feature version="${adsal.version}">odl-adsal-core</feature>
     <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
     <!-- ZDY: surely we want to support clustering, enable clustering default -->
     <feature version='${mdsal.version}'>odl-mdsal-clustering</feature>
@@ -30,6 +35,10 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       conflict with us. -->
     <feature version="${l2switch.version}">odl-l2switch-packethandler</feature>
     <feature version='${project.version}'>xsdn-xos-model</feature>
+    <!-- we copy code from vtn project, which use jackson, so we must add to the bundle list -->
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
     <bundle>mvn:com.xsdn/xos-main/${project.version}</bundle>
     <configfile finalname="${configfile.directory}/xos.xml">mvn:com.xsdn/xos-main/${project.version}/xml/config</configfile>
   </feature>
