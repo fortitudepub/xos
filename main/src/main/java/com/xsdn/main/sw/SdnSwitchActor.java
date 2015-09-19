@@ -137,32 +137,35 @@ public class SdnSwitchActor extends UntypedActor {
         }
 
         if (vMAC != null) {
-            // No VLAN in ai deployment.
+            TransmitPacketInput arpReply;
 
             try {
-                //Build a random arp packet
-                // TODO: fix me, just for test send arp packet.
-                EtherAddress src = new EtherAddress(0x001122aabbccL);
-                EtherAddress dst = EtherAddress.BROADCAST;
-                InetAddress target = InetAddress.getByName("10.1.2.3");
-                InetAddress ip6 = InetAddress.getByName("::1");
-                Ip4Network spa = new Ip4Network(0);
-                Ip4Network tpa = new Ip4Network(target);
-                ArpPacketBuilder builder = new ArpPacketBuilder();
-                Ethernet ether = builder.build(src, target);
+                // Construct ARP Reply for virtual GW.
+                // Virtual GW IP will be used as SPA, Virtual GW MAC will be ethernet source and SHA.
+                Ip4Network spa = new Ip4Network(dIPv4.getValue());
+                Ip4Network tpa = new Ip4Network(pktIn.pkt.getSourceProtocolAddress());
+                // No VLAN in ai deployment.
+                Ethernet ether = new ArpPacketBuilder()
+                            .setAsReply()
+                            .setSenderProtocolAddress(spa)
+                            .build(new EtherAddress(vMAC.getValue()),
+                                                    new EtherAddress(pktIn.pkt.getSourceHardwareAddress()),
+                                                    tpa);
 
                 InstanceIdentifier<Node> node = pktIn.rawPkt.getIngress().getValue().firstIdentifierOf(Node.class);
 
-                TransmitPacketInput arpReply = new TransmitPacketInputBuilder()
+                arpReply = new TransmitPacketInputBuilder()
                         .setPayload(ether.serialize())
                         .setNode(new NodeRef(node))
                         .setEgress(pktIn.rawPkt.getIngress())
                         .build();
-
-                packetProcessingService.transmitPacket(arpReply);
             } catch (Exception e) {
-                // TODO: remove later.
+                LOG.error("Failed to build arp reply for vgw " + dIPv4.getValue() +
+                        "with request from " + pktIn.pkt.getSourceProtocolAddress());
+                return true;
             }
+
+            packetProcessingService.transmitPacket(arpReply);
         }
 
         return true;

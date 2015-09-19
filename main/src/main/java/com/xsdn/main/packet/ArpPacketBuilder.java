@@ -81,6 +81,16 @@ public final class ArpPacketBuilder {
     }
 
     /**
+     * Set the arp operation.
+     *
+     * @return  This instance.
+     */
+    public ArpPacketBuilder setAsReply() {
+        operation = ARP.REPLY;
+        return this;
+    }
+
+    /**
      * Set the sender protocol address.
      *
      * @param ip4  An {@link Ip4Network} instance which indicates the
@@ -92,6 +102,7 @@ public final class ArpPacketBuilder {
         senderProtocolAddress = ip4;
         return this;
     }
+
 
     /**
      * Create a broadcast Ethernet frame which contains an ARP request message
