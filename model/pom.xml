@@ -37,6 +37,11 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       <artifactId>ietf-inet-types</artifactId>
       <version>2010.09.24.7-Lithium</version>
     </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin.model</groupId>
+      <artifactId>model-flow-base</artifactId>
+      <version>0.1.0-Lithium</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -5,6 +5,8 @@ module xos {
 
     import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
     import ietf-yang-types {prefix yang; revision-date "2010-09-24";}
+    import opendaylight-flow-types {prefix flow;revision-date "2013-10-26";}
+    import opendaylight-group-types {prefix group;revision-date "2013-10-18";}
 
     revision "2015-08-20" {
         description "Initial revision of xos model";
@@ -20,7 +22,7 @@ module xos {
        For example we have the following data definition:
 
        list tests {
-            uses test;
+       uses test;
        }
 
        YANG-TOOLS generated Tests class to abstract the list member, however, there is also a Test class which
@@ -31,13 +33,18 @@ module xos {
 
        So the desired definition should be
        list ai-test {
-            uses test;
+       uses test;
        }
 
        TODO:
        We may support a simple LACP to form MLAG for the attached host between the intermediate L2SW
        link may not down even OFSW down.
     */
+
+    typedef flow-id {
+        description "MD-SAL identifier of openflow flow. ";
+        type inet:uri;
+    }
 
     grouping virtual-gateway {
         leaf virtual-gateway-ip {
@@ -54,7 +61,7 @@ module xos {
 
     /* Define the host connected directly or indirectly to the SDN switch, the IP address should be
        configured by user.
-     */
+    */
     grouping managed-host {
         leaf managed-host-ip {
             type inet:ipv4-address;
@@ -103,7 +110,18 @@ module xos {
             type inet:ipv4-address;
             description "The IP of the interface which have quagga ospf enabled, we spoof its mac, and use this to
                          drop the dns anycast ip by default until load balance group is installed by client of us.";
-        }            
+        }
+        list flow {
+            key "id";
+
+            leaf id {
+                type flow-id;
+            }
+
+            uses flow:flow;
+        }
+
+        uses group:groups;
     }
 
     container xos {
@@ -113,7 +131,7 @@ module xos {
                     type inet:ipv4-address;
                     description "The ipv4 anycast address this switchset will serve.";
                 }
-             }
+            }
 
             /* The active passive switch acts as an cluster, so the subnet is managed by the cluster instead
                of the individual switch. */
@@ -137,7 +155,7 @@ module xos {
                     type boolean;
                     description "active-passive status, true means active.";
                     config false;
-                }                
+                }
             }
 
             container west {
@@ -149,6 +167,7 @@ module xos {
                         error-message "dpid must not be empty.";
                     }
                 }
+                
                 leaf active {
                     type boolean;
                     description "active-passive status, true means active.";
