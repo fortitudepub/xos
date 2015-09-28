@@ -1,9 +1,11 @@
 package org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.main.rev150820;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.osgi.BundleDelegatingClassLoader;
 import com.typesafe.config.ConfigFactory;
 import com.xsdn.main.config.ConfigDataListener;
+import com.xsdn.main.ha.MdsalRoleChangeListener;
 import com.xsdn.main.packet.ArpPacketHandler;
 import com.xsdn.main.rpc.XosRpcProvider;
 import com.xsdn.main.sw.SdnSwitchManager;
@@ -65,6 +67,9 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
 
         // Create west and east sdn switch actor.
         final SdnSwitchManager sdnSwitchManager = new SdnSwitchManager(system, packetProcessingService);
+
+        // Create controller active/backup listener actor.
+        ActorRef listenerActor = system.actorOf(MdsalRoleChangeListener.getProps("member-1"));
 
         // Register xos rpc.
         getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());
