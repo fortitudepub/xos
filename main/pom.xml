@@ -50,6 +50,14 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal-clustering-commons</artifactId>
     </dependency>
+    <!-- if we can use ShardIdentifier directly from datastore, it will be easy to
+    locate our xos shard notifier, however, it collide with clustering-commons namespace
+    in the ShardIdentifier package, so we need hardcode some stuffs in MdsalRoleChangeListener.
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-distributed-datastore</artifactId>
+    </dependency>
+    -->
 
     <!-- ODL AD-SAL, we only use the packet serializer -->
     <dependency>
@@ -94,7 +102,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-osgi_${scala.version}</artifactId>
+      <artifactId>akka-remote_${scala.version}</artifactId>
       <version>${akka.version}</version>
     </dependency>
     <dependency>
@@ -111,12 +119,12 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence-experimental_${scala.version}</artifactId>
+      <artifactId>akka-osgi_${scala.version}</artifactId>
       <version>${akka.version}</version>
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-remote_${scala.version}</artifactId>
+      <artifactId>akka-persistence-experimental_${scala.version}</artifactId>
       <version>${akka.version}</version>
     </dependency>
     <dependency>

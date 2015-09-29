@@ -31,16 +31,23 @@ import scala.concurrent.duration.FiniteDuration;
  */
 public class MdsalRoleChangeListener extends AbstractUntypedActor implements AutoCloseable{
 
+    // Defined in DistributedDataStoreFactory.
+    //private static final String NOTIFIER_AKKA_URL = "akka://opendaylight-cluster-data/user";
     private static final String NOTIFIER_AKKA_URL = "akka.tcp://opendaylight-cluster-data@127.0.0.1:2550/user";
 
     private Cancellable registrationSchedule = null;
     private static final FiniteDuration duration = new FiniteDuration(100, TimeUnit.MILLISECONDS);
     private static final FiniteDuration schedulerDuration = new FiniteDuration(1, TimeUnit.SECONDS);
-    private static final String shardName = "xos";
-    //private String notifierActorName = NOTIFIER_AKKA_URL + "/" + shardName + "-notifier";
-    // TODO: this is hard coded path for test only, later we need to find a way to locate the xos config actor.
-    private String notifierActorName =
-            "akka.tcp://opendaylight-cluster-data@127.0.0.1:2550/user/shard manager-config/member-1-shard-xos-config/member-1-shard-xos-config-notifier";
+    // TODO: how we can solve this hard-coded member-1, shard, xos, -notifier .etc?
+    // see createLocalShards in ShardManager to know where member-1-shard-xos-config come from.
+    // basically it is constructed by "role-name"-shard-"shardname"-"datastore type(config/operational)".
+    // Since we use it's leader election, we must access the information, however, this is actually a workaround,
+    // if later ODL OF plugin support master/slave election and will not push flows in slave controller node,
+    // we can remove our logic here.
+    // NOTE: ShardIdentifier is not available because of namespace collision with sal-clustering-commons.
+    private String shardName = "member-1" + "-shard-" + "xos" + "-config";
+    // TODO: use string builder if neccesary.
+    private String notifierActorName = NOTIFIER_AKKA_URL + "/shardmanager-config/" + shardName + "/" + shardName + "-notifier";
 
     public MdsalRoleChangeListener(String memberName) {
         super();
@@ -85,13 +92,13 @@ public class MdsalRoleChangeListener extends AbstractUntypedActor implements Aut
 
     private void sendRegistrationRequests() {
         try {
-            LOG.debug("{} registering with {}", getSelf().path().toString(), notifierActorName);
+            LOG.info("{} registering with {}", getSelf().path().toString(), notifierActorName);
             ActorRef notifier = Await.result(
                     getContext().actorSelection(notifierActorName).resolveOne(duration), duration);
 
             notifier.tell(new RegisterRoleChangeListener(), getSelf());
         } catch (Exception e) {
-            LOG.error("ERROR!! Unable to send registration request to notifier {}", shardName);
+            LOG.error("ERROR!! Unable to send registration request to notifier {}", notifierActorName);
         }
     }
 
