@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 import akka.osgi.BundleDelegatingClassLoader;
 import com.typesafe.config.ConfigFactory;
 import com.xsdn.main.config.ConfigDataListener;
+import com.xsdn.main.config.frm.impl.ForwardingRulesManagerImpl;
 import com.xsdn.main.ha.MdsalRoleChangeListener;
 import com.xsdn.main.packet.ArpPacketHandler;
 import com.xsdn.main.rpc.XosRpcProvider;
@@ -65,8 +66,8 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
                 Thread.currentThread().getContextClassLoader());
         final ActorSystem system = ActorSystem.create("XosActorSystem", ConfigFactory.load(classLoader), classLoader);
 
-        // Create west and east sdn switch actor.
-        final SdnSwitchManager sdnSwitchManager = new SdnSwitchManager(system, packetProcessingService);
+        // Create sdn switch manager and init it.
+        SdnSwitchManager.getSdnSwitchManager().init(system, packetProcessingService, salFlowService);
 
         // Create controller active/backup listener actor.
         ActorRef listenerActor = system.actorOf(MdsalRoleChangeListener.getProps("member-1"));
@@ -74,15 +75,17 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         // Register xos rpc.
         getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());
 
-        // TODO: install a to controller flow.
-
+        // Start flow database manager.
+        final ForwardingRulesManagerImpl forwardingrulessManagerProvider =
+                new ForwardingRulesManagerImpl(getDataBrokerDependency(), getRpcRegistryDependency());
+        forwardingrulessManagerProvider.start();
 
         // Register packet dispatcher.
-        arpPacketHandler = new ArpPacketHandler(sdnSwitchManager);
+        arpPacketHandler = new ArpPacketHandler(SdnSwitchManager.getSdnSwitchManager());
         arpPacketInListener = notificationService.registerNotificationListener(arpPacketHandler);
 
         // Register config handler.
-        configDataListener = new ConfigDataListener(sdnSwitchManager, dataService);
+        configDataListener = new ConfigDataListener(SdnSwitchManager.getSdnSwitchManager(), dataService);
 
         final class CloseXosResource implements AutoCloseable {
             @Override

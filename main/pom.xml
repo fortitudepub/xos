@@ -31,6 +31,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <l2switch.version>0.2.0-Lithium</l2switch.version>
     <adsal.version>0.9.0-Lithium</adsal.version>
     <jackson.version>2.3.2</jackson.version>
+    <openflowplugin.version>0.1.0-Lithium</openflowplugin.version>
   </properties>
 
   <dependencies>
@@ -50,6 +51,10 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal-clustering-commons</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-akka-raft</artifactId>
+    </dependency>
     <!-- if we can use ShardIdentifier directly from datastore, it will be easy to
     locate our xos shard notifier, however, it collide with clustering-commons namespace
     in the ShardIdentifier package, so we need hardcode some stuffs in MdsalRoleChangeListener.
@@ -67,9 +72,16 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     </dependency>
 
     <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowplugin-api</artifactId>
+      <version>${openflowplugin.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.opendaylight.openflowplugin.model</groupId>
       <artifactId>model-flow-service</artifactId>
+      <version>${openflowplugin.version}</version>
     </dependency>
+
     <!-- some of l2switch components -->
     <dependency>
       <groupId>org.opendaylight.l2switch.packethandler</groupId>

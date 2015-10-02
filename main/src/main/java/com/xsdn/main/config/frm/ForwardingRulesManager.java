@@ -119,8 +119,8 @@ public interface ForwardingRulesManager extends AutoCloseable {
 
     /**
      * Content definition method
-     * @return FlowNodeReconciliation
+     * @return FlowNodeObserver
      */
-    public FlowNodeReconciliation getFlowNodeReconciliation();
+    public FlowNodeObserver getFlowNodeReconciliation();
 }
 

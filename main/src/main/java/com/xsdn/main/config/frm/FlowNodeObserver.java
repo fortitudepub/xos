@@ -16,7 +16,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
  * forwardingrules-manager
  * org.opendaylight.openflowplugin.applications.frm
  *
- * FlowNodeReconciliation
+ * FlowNodeObserver
  * It represent Reconciliation functionality for every new device.
  * So we have to read all possible pre-configured Flows, Meters and Groups from
  * Config/DS and add all to new device.
@@ -34,7 +34,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
  *
  * Created: Aug 26, 2014
  */
-public interface FlowNodeReconciliation extends DataChangeListener, AutoCloseable {
+public interface FlowNodeObserver extends DataChangeListener, AutoCloseable {
 
     /**
      * Method contains Node registration to {@link ForwardingRulesManager} functionality

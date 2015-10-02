@@ -8,62 +8,38 @@
 
 package com.xsdn.main.config.frm.impl;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-import com.xsdn.main.config.frm.FlowNodeReconciliation;
+import com.xsdn.main.config.frm.FlowNodeObserver;
 import com.xsdn.main.config.frm.ForwardingRulesManager;
+import com.xsdn.main.sw.SdnSwitchManager;
 import com.xsdn.main.util.SimpleTaskRetryLooper;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
-import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.meters.Meter;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.meters.MeterKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.types.rev131018.groups.Group;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.types.rev131018.groups.GroupKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.table.types.rev131026.table.features.TableFeatures;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.table.types.rev131026.table.features.TableFeaturesKey;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yangtools.yang.binding.KeyedInstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * forwardingrules-manager
- * org.opendaylight.openflowplugin.applications.frm
- *
- * FlowNode Reconciliation Listener
- * Reconciliation for a new FlowNode
- *
- * @author <a href="mailto:vdemcak@cisco.com">Vaclav Demcak</a>
- *
- * Created: Jun 13, 2014
- */
-public class FlowNodeReconciliationImpl implements FlowNodeReconciliation {
+public class FlowNodeObserverImpl implements FlowNodeObserver {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FlowNodeReconciliationImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FlowNodeObserverImpl.class);
 
     private final ForwardingRulesManager provider;
 
     private ListenerRegistration<DataChangeListener> listenerRegistration;
 
-    public FlowNodeReconciliationImpl (final ForwardingRulesManager manager, final DataBroker db) {
+    public FlowNodeObserverImpl(final ForwardingRulesManager manager, final DataBroker db) {
         this.provider = Preconditions.checkNotNull(manager, "ForwardingRulesManager can not be null!");
         Preconditions.checkNotNull(db, "DataBroker can not be null!");
         /* Build Path */
@@ -77,13 +53,13 @@ public class FlowNodeReconciliationImpl implements FlowNodeReconciliation {
                 @Override
                 public ListenerRegistration<DataChangeListener> call() throws Exception {
                     return db.registerDataChangeListener(LogicalDatastoreType.OPERATIONAL,
-                            flowNodeWildCardIdentifier, FlowNodeReconciliationImpl.this, DataChangeScope.BASE);
+                            flowNodeWildCardIdentifier, FlowNodeObserverImpl.this, DataChangeScope.BASE);
                 }
             });
         } catch (Exception e) {
             LOG.warn("data listener registration failed: {}", e.getMessage());
             LOG.debug("data listener registration failed.. ", e);
-            throw new IllegalStateException("FlowNodeReconciliation startup fail! System needs restart.", e);
+            throw new IllegalStateException("FlowNodeObserver startup fail! System needs restart.", e);
         }
     }
 
@@ -129,21 +105,21 @@ public class FlowNodeReconciliationImpl implements FlowNodeReconciliation {
     @Override
     public void flowNodeDisconnected(InstanceIdentifier<FlowCapableNode> disconnectedNode) {
         provider.unregistrateNode(disconnectedNode);
+        SdnSwitchManager.getSdnSwitchManager().switchDisconnected(disconnectedNode);
     }
 
     @Override
     public void flowNodeConnected(InstanceIdentifier<FlowCapableNode> connectedNode) {
         if ( ! provider.isNodeActive(connectedNode)) {
             provider.registrateNewNode(connectedNode);
-            reconciliation(connectedNode);
+            SdnSwitchManager.getSdnSwitchManager().switchConnected(connectedNode);
         }
     }
 
+/* Reconciliation will be done in the actor.
     private void reconciliation(final InstanceIdentifier<FlowCapableNode> nodeIdent) {
 
-        // TODO: fix this later, use the actor model.
-
-/*        ReadOnlyTransaction trans = provider.getReadTranaction();
+       ReadOnlyTransaction trans = provider.getReadTranaction();
         Optional<FlowCapableNode> flowNode = Optional.absent();
 
         try {
@@ -201,7 +177,8 @@ public class FlowNodeReconciliationImpl implements FlowNodeReconciliation {
             }
         }
         *//* clean transaction *//*
-        trans.close();*/
+        trans.close();
     }
+    */
 }
 

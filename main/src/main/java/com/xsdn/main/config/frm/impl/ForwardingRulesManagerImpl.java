@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.xsdn.main.config.frm.FlowNodeReconciliation;
+import com.xsdn.main.config.frm.FlowNodeObserver;
 import com.xsdn.main.config.frm.ForwardingRulesCommiter;
 import com.xsdn.main.config.frm.ForwardingRulesManager;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -60,7 +60,7 @@ public class ForwardingRulesManagerImpl implements ForwardingRulesManager {
 
     private ForwardingRulesCommiter<Flow> westFlowListener;
     private ForwardingRulesCommiter<Group> groupListener;
-    private FlowNodeReconciliation nodeListener;
+    private FlowNodeObserver nodeListener;
 
     public ForwardingRulesManagerImpl(final DataBroker dataBroker,
                                       final RpcConsumerRegistry rpcRegistry) {
@@ -84,7 +84,7 @@ public class ForwardingRulesManagerImpl implements ForwardingRulesManager {
         this.westFlowListener = new WestFlowForwarder(this, dataService);
 
         this.groupListener = new GroupForwarder(this, dataService);
-        this.nodeListener = new FlowNodeReconciliationImpl(this, dataService);
+        this.nodeListener = new FlowNodeObserverImpl(this, dataService);
         LOG.info("ForwardingRulesManager has started successfully.");
 
     }
@@ -179,7 +179,7 @@ public class ForwardingRulesManagerImpl implements ForwardingRulesManager {
     }
 
     @Override
-    public FlowNodeReconciliation getFlowNodeReconciliation() {
+    public FlowNodeObserver getFlowNodeReconciliation() {
         return nodeListener;
     }
 }

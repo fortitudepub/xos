@@ -14,6 +14,7 @@ import org.opendaylight.controller.cluster.common.actor.AbstractUntypedActor;
 import org.opendaylight.controller.cluster.notifications.RegisterRoleChangeListener;
 import org.opendaylight.controller.cluster.notifications.RegisterRoleChangeListenerReply;
 import org.opendaylight.controller.cluster.notifications.RoleChangeNotification;
+import org.opendaylight.controller.cluster.raft.RaftState;
 import scala.concurrent.Await;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -77,8 +78,12 @@ public class MdsalRoleChangeListener extends AbstractUntypedActor implements Aut
             LOG.info("Role Change Notification received for member:{}, old role:{}, new role:{}",
                     notification.getMemberId(), notification.getOldRole(), notification.getNewRole());
 
-            // the apps dependent on such notifications can be called here
-            //TODO: add implementation here
+            if (notification.getNewRole().equals(RaftState.Leader.name())) {
+                XosAppStatusMgr.getXosAppStatus().setStatus(XosAppStatusMgr.APP_STATUS_ACTIVE);
+            } else {
+                // App will only switch between active and backup after the initial invalid state.
+                XosAppStatusMgr.getXosAppStatus().setStatus(XosAppStatusMgr.APP_STATUS_BACKUP);
+            }
         }
     }
 

@@ -56,8 +56,8 @@ public class ArpPacketHandler implements ArpPacketListener {
             return;
         }
 
-        nodeId = rawPacket.getIngress().getValue().firstIdentifierOf(Node.class).
-                firstKeyOf(Node.class, NodeKey.class).getId();;
+        nodeId = rawPacket.getIngress().getValue().firstIdentifierOf(Node.class)
+                .firstKeyOf(Node.class, NodeKey.class).getId();;
         switchRef = sdnSwitchManager.getSdnSwitchByNodeId(nodeId);
         if (switchRef != null) {
             switchRef.tell(new SdnSwitchActor.ArpPacketIn(nodeId, rawPacket, arpPacket), null);
