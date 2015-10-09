@@ -67,7 +67,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         final ActorSystem system = ActorSystem.create("XosActorSystem", ConfigFactory.load(classLoader), classLoader);
 
         // Create sdn switch manager and init it.
-        SdnSwitchManager.getSdnSwitchManager().init(system, packetProcessingService, salFlowService);
+        SdnSwitchManager.getSdnSwitchManager().init(system, packetProcessingService, salFlowService, dataService);
 
         // Create controller active/backup listener actor.
         ActorRef listenerActor = system.actorOf(MdsalRoleChangeListener.getProps("member-1"));

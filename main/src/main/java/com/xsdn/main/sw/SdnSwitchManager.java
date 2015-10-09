@@ -6,6 +6,7 @@ import akka.actor.Cancellable;
 import akka.actor.Props;
 import com.google.common.collect.Sets;
 import com.xsdn.main.util.OFutils;
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
@@ -48,9 +49,10 @@ public class SdnSwitchManager {
         return sdnSwitchManager;
     }
 
-    public void init(ActorSystem system, PacketProcessingService packetProcessingService, SalFlowService salFlowService) {
-        this.westActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService));
-        this.eastActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService));
+    public void init(ActorSystem system, PacketProcessingService packetProcessingService,
+                     SalFlowService salFlowService, DataBroker dataService) {
+        this.westActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService, dataService));
+        this.eastActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService, dataService));
 
         /* Send periodical arp probe message to trigger arp probe and mac learning.
          * TODO: let 50ms to be configurable. */
@@ -130,6 +132,22 @@ public class SdnSwitchManager {
         }
 
         return null;
+    }
+
+    public boolean isWest(NodeId nodeId) {
+        if (nodeId.equals(westSdnSwitchNodeId)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean isEast(NodeId nodeId) {
+        if (nodeId.equals(eastSdnSwitchNodeId)) {
+            return true;
+        }
+
+        return false;
     }
 
     public void notifyAppStatus(int status) {

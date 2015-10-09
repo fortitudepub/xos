@@ -5,11 +5,18 @@ import akka.actor.UntypedActor;
 import akka.japi.Creator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.xsdn.main.ha.XosAppStatusMgr;
 import com.xsdn.main.packet.ArpPacketBuilder;
 import com.xsdn.main.util.EtherAddress;
 import com.xsdn.main.util.Ip4Network;
 import com.xsdn.main.util.OFutils;
+import com.xsdn.main.util.Constants;
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
@@ -58,7 +65,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.Pa
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.packet.received.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.Xos;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.AppFlow;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.AppFlowBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.AppFlowKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.AiActivePassiveSwitchset;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.AiManagedSubnet;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.East;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.West;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.east.EastSwitch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.west.WestSwitch;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,14 +95,18 @@ public class SdnSwitchActor extends UntypedActor {
     private static final HashMap<Short, AiManagedSubnet> subnetMap = new HashMap(50); // TODO: 50 is a arbitrary number now.
     private PacketProcessingService packetProcessingService = null;
     private SalFlowService salFlowService = null;
+    private DataBroker dataService = null;
     private String dpid;
+    private NodeId nodeId;
     private int appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
     boolean deviceConnected = false;
 
     private SdnSwitchActor(final PacketProcessingService packetProcessingService,
-                           final SalFlowService salFlowService) {
+                           final SalFlowService salFlowService,
+                           final DataBroker dataService) {
         this.packetProcessingService = Preconditions.checkNotNull(packetProcessingService);
         this.salFlowService = salFlowService;
+        this.dataService = dataService;
     }
 
     // Define messages which will be processed by this actor.
@@ -177,10 +197,12 @@ public class SdnSwitchActor extends UntypedActor {
 
         // start building flow
         FlowBuilder arpFlow = new FlowBuilder() //
-                .setTableId((short) 0)
-                .setFlowName("_XOS_DFT_ARP_0");
+                .setTableId(Constants.XOS_APP_DEFAULT_TABLE_ID)
+                .setFlowName(Constants.XOS_APP_DFT_ARP_FLOW_NAME);
 
         // use its own hash code for id.
+        // TODO: copied from openflow plugin, we need to provide a persistent api for flow id generation
+        // better use priroity+flow_id_in_that priority as we defined in our design document.
         arpFlow.setId(new FlowId(Long.toString(arpFlow.hashCode())));
         EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
                 .setEthernetType(new EthernetTypeBuilder()
@@ -211,7 +233,7 @@ public class SdnSwitchActor extends UntypedActor {
                 .setInstructions(new InstructionsBuilder() //
                         .setInstruction(ImmutableList.of(applyActionsInstruction)) //
                         .build()) //
-                .setPriority(0) //
+                .setPriority(Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY) //
                 .setBufferId(OFConstants.OFP_NO_BUFFER) //
                 //.setHardTimeout(flowHardTimeout)
                 //.setIdleTimeout(flowIdleTimeout)
@@ -221,22 +243,73 @@ public class SdnSwitchActor extends UntypedActor {
         return arpFlow.build();
     }
 
-    private void addInitFlows() {
-        if (!deviceConnected) {
-            LOG.info("Device is not connected, skip init flow provisioning");
+    // generate app flow builder by converting from ofpluginflow.
+    private void storeAppFlowbyOfpluginFlow(Flow ofpluginFlow, final FlowId ofpluginFlowId) {
+        final WriteTransaction writeTransaction = dataService.newWriteOnlyTransaction();
+
+        // We need use our own flow id and appflow definition, though this seems quit duplicate, it's the problem
+        // of yangtools.
+        org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.FlowId appFlowId =
+                new org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.FlowId(ofpluginFlowId.getValue());
+        AppFlowKey appFlowKey = new AppFlowKey(appFlowId);
+
+        InstanceIdentifier<AppFlow> appFlowIID;
+
+        if (SdnSwitchManager.getSdnSwitchManager().isEast(this.nodeId)) {
+            appFlowIID = InstanceIdentifier.<Xos>builder(Xos.class)
+                    .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
+                    .<East>child(East.class)
+                    .<EastSwitch>child(EastSwitch.class)
+                    .<AppFlow, AppFlowKey>child(AppFlow.class, appFlowKey).build();
+        }
+        else if (SdnSwitchManager.getSdnSwitchManager().isWest(this.nodeId)) {
+            appFlowIID = InstanceIdentifier.<Xos>builder(Xos.class)
+                    .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
+                    .<West>child(West.class)
+                    .<WestSwitch>child(WestSwitch.class)
+                    .<AppFlow, AppFlowKey>child(AppFlow.class, appFlowKey).build();
+        }
+        else {
+            writeTransaction.cancel();
             return;
         }
 
-        // TEST ARP DFT FLOW INSTALLATION, NEED STORE IT TO OPERATIONAL DATABASE.
+        // setKey is must because instantiate AppFlowBuilder with ofpluginFlow will not set app flow key.
+        AppFlowBuilder appFlowBuilder = new AppFlowBuilder(ofpluginFlow).setKey(appFlowKey).setId(appFlowId);
+
+        // Do the database transaction, true is neccesary because we have to create the missing parent
+        // node in the path.
+        writeTransaction.merge(LogicalDatastoreType.OPERATIONAL, appFlowIID, appFlowBuilder.build(), true);
+        final CheckedFuture writeTxResultFuture = writeTransaction.submit();
+        Futures.addCallback(writeTxResultFuture, new FutureCallback() {
+            @Override
+            public void onSuccess(Object o) {
+                LOG.debug("Store app flow {} to mdsal store successful for tx :{}",
+                        ofpluginFlowId.getValue(), writeTransaction.getIdentifier());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                LOG.error("Store app flow {] to mdsal write transaction {} failed",
+                        ofpluginFlowId.getValue(), writeTransaction.getIdentifier(), throwable.getCause());
+            }
+        });
+    }
+
+    private void addDftArpFlows() {
+
+        // Note: we need install default arp flow for both active and backup switch.
+
+        // Action 1: send to switch by using sal flow service.
         InstanceIdentifier<Node> nodeIID =
                 InstanceIdentifier.builder(Nodes.class)
                         .child(Node.class, new NodeKey(new NodeId(OFutils.BuildNodeIdUriByDpid(this.dpid)))).build();
-        TableKey flowTableKey = new TableKey((short)0); // Only table 0 is needed.
+        TableKey flowTableKey = new TableKey(Constants.XOS_APP_DEFAULT_TABLE_ID);
         InstanceIdentifier<Table> tableIID = nodeIID.builder()
                 .augmentation(FlowCapableNode.class)
                 .child(Table.class, flowTableKey)
                 .build();
-        FlowId flowId = new FlowId("_XOS_DFT_ARP_0");
+        FlowId flowId = new FlowId(Constants.XOS_APP_DFT_ARP_FLOW_NAME);
         FlowKey flowKey = new FlowKey(flowId);
         InstanceIdentifier<Flow> flowIID = tableIID.child(Flow.class, flowKey);
 
@@ -248,9 +321,23 @@ public class SdnSwitchActor extends UntypedActor {
         builder.setFlowRef(new FlowRef(flowIID));
         builder.setFlowTable(new FlowTableRef(tableIID));
         builder.setTransactionUri(new Uri(flow.getId().getValue()));
+        // TODO: by reading openflowplugin code, seems the returned future of salflowservice only make sure the
+        // flow mod message is write to the of channel, it does not ensure the flow entries is installed in the
+        // switch, we must implement a logic to check this. either by periodically timer or some other means.
         salFlowService.addFlow(builder.build());
 
+        // Action 2: store to our md sal datastore for reconciliation.
+        storeAppFlowbyOfpluginFlow(flow, flowId);
         LOG.info("Pushed init flow {} to the switch {}", "_XOS_DFT_ARP_0", this.dpid);
+    }
+
+    private void addInitFlows() {
+        if (!deviceConnected) {
+            LOG.info("Device is not connected, skip init flow provisioning");
+            return;
+        }
+
+        addDftArpFlows();
     }
 
     private void processAppStatusUpdate(int status) {
@@ -293,6 +380,7 @@ public class SdnSwitchActor extends UntypedActor {
         LOG.info("SdnSwitch actor received dpid created, dpid is " + dpid);
         if (null == this.dpid) {
             this.dpid = dpid;
+            this.nodeId = new NodeId(OFutils.BuildNodeIdUriByDpid(this.dpid));
             if (this.appStatus == XosAppStatusMgr.APP_STATUS_ACTIVE) {
                 // TODO: init the switch since we have the dpid configured now.
                 this.addInitFlows();
@@ -430,23 +518,27 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     public static Props props(final PacketProcessingService packetProcessingService,
-                              final SalFlowService salFlowService) {
-        return Props.create(new SdnSwitchActorCreator(packetProcessingService, salFlowService));
+                              final SalFlowService salFlowService,
+                              final DataBroker dataService) {
+        return Props.create(new SdnSwitchActorCreator(packetProcessingService, salFlowService, dataService));
     }
 
     private static final class SdnSwitchActorCreator implements Creator<SdnSwitchActor> {
         private final PacketProcessingService packetProcessingService;
         private final SalFlowService salFlowService;
+        private final DataBroker dataService;
 
         SdnSwitchActorCreator(final PacketProcessingService packetProcessingService,
-                              final SalFlowService salFlowService) {
+                              final SalFlowService salFlowService,
+                              final DataBroker dataService) {
             this.packetProcessingService = Preconditions.checkNotNull(packetProcessingService);
             this.salFlowService = Preconditions.checkNotNull(salFlowService);
+            this.dataService = Preconditions.checkNotNull(dataService);
         }
 
         @Override
         public SdnSwitchActor create() {
-            return new SdnSwitchActor(packetProcessingService, salFlowService);
+            return new SdnSwitchActor(packetProcessingService, salFlowService, dataService);
         }
     }
 }

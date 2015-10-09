@@ -111,6 +111,7 @@ module xos {
             description "The IP of the interface which have quagga ospf enabled, we spoof its mac, and use this to
                          drop the dns anycast ip by default until load balance group is installed by client of us.";
         }
+        
         list flow {
             key "id";
 
