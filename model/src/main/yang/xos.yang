@@ -112,7 +112,7 @@ module xos {
                          drop the dns anycast ip by default until load balance group is installed by client of us.";
         }
         
-        list flow {
+        list user-flow {
             key "id";
 
             leaf id {
@@ -122,7 +122,9 @@ module xos {
             uses flow:flow;
         }
 
-        uses group:groups;
+        container user-group {
+            uses group:groups;
+        }
 
         list app-flow {
             key "id";

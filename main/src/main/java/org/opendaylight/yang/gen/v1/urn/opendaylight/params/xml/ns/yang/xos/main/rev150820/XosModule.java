@@ -77,7 +77,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
 
         // Start flow database manager.
         final ForwardingRulesManagerImpl forwardingrulessManagerProvider =
-                new ForwardingRulesManagerImpl(getDataBrokerDependency(), getRpcRegistryDependency());
+                new ForwardingRulesManagerImpl(getDataBrokerDependency());
         forwardingrulessManagerProvider.start();
 
         // Register packet dispatcher.

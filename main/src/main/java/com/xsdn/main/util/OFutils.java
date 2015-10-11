@@ -5,6 +5,10 @@ package com.xsdn.main.util;
  */
 public class OFutils {
     private static final String OPENFLOW_DOMAIN = "openflow:";
+    public static short FLOW_ADD = 1;
+    public static short FLOW_REMOVE = 2;
+    public static short FLOW_UPDATE= 3;
+    public static short FLOW_DELETE = 4;
 
     public static String BuildNodeIdUriByDpid(String dpid) {
         return (OPENFLOW_DOMAIN + Long.parseLong(dpid, 16));

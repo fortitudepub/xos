@@ -22,26 +22,16 @@ import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.ApplyActionsCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActionsBuilder;
@@ -49,10 +39,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instru
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetTypeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
@@ -61,26 +48,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.arp.pa
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.basepacket.rev140528.packet.chain.grp.packet.chain.packet.RawPacket;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.ethernet.rev140528.KnownEtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.packet.received.Match;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.Xos;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.AppFlow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.AppFlowBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.AppFlowKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.AiActivePassiveSwitchset;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.UserFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.AiManagedSubnet;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.East;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.West;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.east.EastSwitch;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.west.WestSwitch;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -99,7 +74,9 @@ public class SdnSwitchActor extends UntypedActor {
     private String dpid;
     private NodeId nodeId;
     private int appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
-    boolean deviceConnected = false;
+    private boolean deviceConnected = false;
+    private OFpluginHelper ofpluginHelper= null;
+    private MdsalHelper mdsalHelper = null;
 
     private SdnSwitchActor(final PacketProcessingService packetProcessingService,
                            final SalFlowService salFlowService,
@@ -107,6 +84,8 @@ public class SdnSwitchActor extends UntypedActor {
         this.packetProcessingService = Preconditions.checkNotNull(packetProcessingService);
         this.salFlowService = salFlowService;
         this.dataService = dataService;
+        this.ofpluginHelper = new OFpluginHelper(salFlowService);
+        this.mdsalHelper = new MdsalHelper(dataService);
     }
 
     // Define messages which will be processed by this actor.
@@ -171,6 +150,16 @@ public class SdnSwitchActor extends UntypedActor {
         }
     }
 
+    static public class UserFlowOp {
+        private short op;
+        private UserFlow userFlow;
+
+        public UserFlowOp(short op, UserFlow userFlow) {
+            this.op = op;
+            this.userFlow = userFlow;
+        }
+    }
+
     public SdnSwitchActor() {
         // TODO:
         // 1. initialize runtime database
@@ -179,8 +168,16 @@ public class SdnSwitchActor extends UntypedActor {
         // 4. implement master-slave decide logic
     }
 
-    private Action getSendToControllerAction() {
-        Action sendToController = new ActionBuilder()
+    private void addDftArpFlows() {
+        // Match.
+        EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
+                .setEthernetType(new EthernetTypeBuilder()
+                        .setType(new EtherType(Long.valueOf(KnownEtherType.Arp.getIntValue()))).build());
+        MatchBuilder matchBuilder = new MatchBuilder().setEthernetMatch(ethernetMatchBuilder.build());
+
+
+        // Instrutions.
+        ActionBuilder actionBuilder = new ActionBuilder()
                 .setOrder(0)
                 .setKey(new ActionKey(0))
                 .setAction(new OutputActionCaseBuilder()
@@ -188,146 +185,29 @@ public class SdnSwitchActor extends UntypedActor {
                                 .setMaxLength(0xffff)
                                 .setOutputNodeConnector(new Uri(OutputPortValues.CONTROLLER.toString()))
                                 .build())
-                        .build())
-                .build();
-        return sendToController;
-    }
-
-    private Flow createArpToControllerFlow() {
-
-        // start building flow
-        FlowBuilder arpFlow = new FlowBuilder() //
-                .setTableId(Constants.XOS_APP_DEFAULT_TABLE_ID)
-                .setFlowName(Constants.XOS_APP_DFT_ARP_FLOW_NAME);
-
-        // use its own hash code for id.
-        // TODO: copied from openflow plugin, we need to provide a persistent api for flow id generation
-        // better use priroity+flow_id_in_that priority as we defined in our design document.
-        arpFlow.setId(new FlowId(Long.toString(arpFlow.hashCode())));
-        EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
-                .setEthernetType(new EthernetTypeBuilder()
-                        .setType(new EtherType(Long.valueOf(KnownEtherType.Arp.getIntValue()))).build());
-
-        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match match = new MatchBuilder()
-                .setEthernetMatch(ethernetMatchBuilder.build())
-                .build();
-
+                        .build());
+        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match match = matchBuilder.build();
         List<Action> actions = new ArrayList<Action>();
-        actions.add(getSendToControllerAction());
-
-        // Create an Apply Action
-        ApplyActions applyActions = new ApplyActionsBuilder().setAction(actions)
-                .build();
-
-        // Wrap our Apply Action in an Instruction
-        Instruction applyActionsInstruction = new InstructionBuilder() //
+        actions.add(actionBuilder.build());
+        ApplyActions applyActions = new ApplyActionsBuilder().setAction(actions).build();
+        InstructionBuilder applyActionsInstructionBuilder = new InstructionBuilder()
                 .setOrder(0)
-                .setInstruction(new ApplyActionsCaseBuilder()//
-                        .setApplyActions(applyActions) //
-                        .build()) //
-                .build();
+                .setInstruction(new ApplyActionsCaseBuilder()
+                        .setApplyActions(applyActions)
+                        .build());
+        InstructionsBuilder instructionsBuilder = new InstructionsBuilder() //
+                .setInstruction(ImmutableList.of(applyActionsInstructionBuilder.build()));
 
-        // Put our Instruction in a list of Instructions
-        arpFlow
-                .setMatch(match) //
-                .setInstructions(new InstructionsBuilder() //
-                        .setInstruction(ImmutableList.of(applyActionsInstruction)) //
-                        .build()) //
-                .setPriority(Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY) //
-                .setBufferId(OFConstants.OFP_NO_BUFFER) //
-                //.setHardTimeout(flowHardTimeout)
-                //.setIdleTimeout(flowIdleTimeout)
-                //.setCookie(new FlowCookie(BigInteger.valueOf(flowCookieInc.getAndIncrement())))
-                .setFlags(new FlowModFlags(false, false, false, false, false));
-
-        return arpFlow.build();
-    }
-
-    // generate app flow builder by converting from ofpluginflow.
-    private void storeAppFlowbyOfpluginFlow(Flow ofpluginFlow, final FlowId ofpluginFlowId) {
-        final WriteTransaction writeTransaction = dataService.newWriteOnlyTransaction();
-
-        // We need use our own flow id and appflow definition, though this seems quit duplicate, it's the problem
-        // of yangtools.
-        org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.FlowId appFlowId =
-                new org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.FlowId(ofpluginFlowId.getValue());
-        AppFlowKey appFlowKey = new AppFlowKey(appFlowId);
-
-        InstanceIdentifier<AppFlow> appFlowIID;
-
-        if (SdnSwitchManager.getSdnSwitchManager().isEast(this.nodeId)) {
-            appFlowIID = InstanceIdentifier.<Xos>builder(Xos.class)
-                    .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
-                    .<East>child(East.class)
-                    .<EastSwitch>child(EastSwitch.class)
-                    .<AppFlow, AppFlowKey>child(AppFlow.class, appFlowKey).build();
-        }
-        else if (SdnSwitchManager.getSdnSwitchManager().isWest(this.nodeId)) {
-            appFlowIID = InstanceIdentifier.<Xos>builder(Xos.class)
-                    .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
-                    .<West>child(West.class)
-                    .<WestSwitch>child(WestSwitch.class)
-                    .<AppFlow, AppFlowKey>child(AppFlow.class, appFlowKey).build();
-        }
-        else {
-            writeTransaction.cancel();
-            return;
-        }
-
-        // setKey is must because instantiate AppFlowBuilder with ofpluginFlow will not set app flow key.
-        AppFlowBuilder appFlowBuilder = new AppFlowBuilder(ofpluginFlow).setKey(appFlowKey).setId(appFlowId);
-
-        // Do the database transaction, true is neccesary because we have to create the missing parent
-        // node in the path.
-        writeTransaction.merge(LogicalDatastoreType.OPERATIONAL, appFlowIID, appFlowBuilder.build(), true);
-        final CheckedFuture writeTxResultFuture = writeTransaction.submit();
-        Futures.addCallback(writeTxResultFuture, new FutureCallback() {
-            @Override
-            public void onSuccess(Object o) {
-                LOG.debug("Store app flow {} to mdsal store successful for tx :{}",
-                        ofpluginFlowId.getValue(), writeTransaction.getIdentifier());
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                LOG.error("Store app flow {] to mdsal write transaction {} failed",
-                        ofpluginFlowId.getValue(), writeTransaction.getIdentifier(), throwable.getCause());
-            }
-        });
-    }
-
-    private void addDftArpFlows() {
+        this.ofpluginHelper.addFlow(this.dpid, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
+                                    matchBuilder.build(), instructionsBuilder.build());
 
         // Note: we need install default arp flow for both active and backup switch.
 
-        // Action 1: send to switch by using sal flow service.
-        InstanceIdentifier<Node> nodeIID =
-                InstanceIdentifier.builder(Nodes.class)
-                        .child(Node.class, new NodeKey(new NodeId(OFutils.BuildNodeIdUriByDpid(this.dpid)))).build();
-        TableKey flowTableKey = new TableKey(Constants.XOS_APP_DEFAULT_TABLE_ID);
-        InstanceIdentifier<Table> tableIID = nodeIID.builder()
-                .augmentation(FlowCapableNode.class)
-                .child(Table.class, flowTableKey)
-                .build();
-        FlowId flowId = new FlowId(Constants.XOS_APP_DFT_ARP_FLOW_NAME);
-        FlowKey flowKey = new FlowKey(flowId);
-        InstanceIdentifier<Flow> flowIID = tableIID.child(Flow.class, flowKey);
+        // Action 2: store to our md sal datastore.
 
+        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
+                                      matchBuilder.build(), instructionsBuilder.build());
 
-        Flow flow = createArpToControllerFlow();
-        AddFlowInputBuilder builder = new AddFlowInputBuilder(createArpToControllerFlow());
-
-        builder.setNode(new NodeRef(nodeIID));
-        builder.setFlowRef(new FlowRef(flowIID));
-        builder.setFlowTable(new FlowTableRef(tableIID));
-        builder.setTransactionUri(new Uri(flow.getId().getValue()));
-        // TODO: by reading openflowplugin code, seems the returned future of salflowservice only make sure the
-        // flow mod message is write to the of channel, it does not ensure the flow entries is installed in the
-        // switch, we must implement a logic to check this. either by periodically timer or some other means.
-        salFlowService.addFlow(builder.build());
-
-        // Action 2: store to our md sal datastore for reconciliation.
-        storeAppFlowbyOfpluginFlow(flow, flowId);
         LOG.info("Pushed init flow {} to the switch {}", "_XOS_DFT_ARP_0", this.dpid);
     }
 
@@ -433,7 +313,7 @@ public class SdnSwitchActor extends UntypedActor {
             Entry<Short, AiManagedSubnet> entry = it.next();
             AiManagedSubnet subnet = entry.getValue();
             if ((subnet.getVirtualGateway() != null) && (subnet.getVirtualGateway().getVirtualGatewayIp() != null)
-                && (subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4)))
+                    && (subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4)))
             {
                 isVGWARP = true;
                 vMAC = subnet.getVirtualGateway().getVirtualGatewayMac();
@@ -460,11 +340,11 @@ public class SdnSwitchActor extends UntypedActor {
                 Ip4Network tpa = new Ip4Network(pktIn.pkt.getSourceProtocolAddress());
                 // No VLAN in ai deployment.
                 Ethernet ether = new ArpPacketBuilder()
-                            .setAsReply()
-                            .setSenderProtocolAddress(spa)
-                            .build(new EtherAddress(vMAC.getValue()),
-                                                    new EtherAddress(pktIn.pkt.getSourceHardwareAddress()),
-                                                    tpa);
+                        .setAsReply()
+                        .setSenderProtocolAddress(spa)
+                        .build(new EtherAddress(vMAC.getValue()),
+                                new EtherAddress(pktIn.pkt.getSourceHardwareAddress()),
+                                tpa);
 
                 InstanceIdentifier<Node> node = pktIn.rawPkt.getIngress().getValue().firstIdentifierOf(Node.class);
 
@@ -497,6 +377,15 @@ public class SdnSwitchActor extends UntypedActor {
         // TODO: add arp snooping logic (by WEIZJ).
     }
 
+    private void processUserFlowOp(UserFlowOp userFlowOp) {
+        if (userFlowOp.op == OFutils.FLOW_ADD) {
+            UserFlow userFlow = userFlowOp.userFlow;
+
+            this.ofpluginHelper.addFlow(this.dpid, userFlow.getFlowName(),
+                    userFlow.getMatch(), userFlow.getInstructions());
+        }
+    }
+
     public void onReceive(Object message) throws Exception {
         if (message instanceof DpIdCreated) {
             processDpid(((DpIdCreated) (message)).getDpId());
@@ -512,7 +401,10 @@ public class SdnSwitchActor extends UntypedActor {
             processSubnetUpdate((ManagedSubnetUpdate)message);
         } else if (message instanceof  ArpPacketIn) {
             processArp((ArpPacketIn)message);
-        } else {
+        } else if (message instanceof UserFlowOp) {
+            processUserFlowOp((UserFlowOp)message);
+        }
+        else {
             unhandled(message);
         }
     }

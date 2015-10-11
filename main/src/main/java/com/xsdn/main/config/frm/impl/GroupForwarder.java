@@ -1,10 +1,3 @@
-/**
- * Copyright (c) 2014 Cisco Systems, Inc. and others.  All rights reserved.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v1.0 which accompanies this distribution,
- * and is available at http://www.eclipse.org/legal/epl-v10.html
- */
 package com.xsdn.main.config.frm.impl;
 
 import com.google.common.base.Preconditions;
@@ -32,16 +25,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * GroupForwarder
- * It implements {@link org.opendaylight.controller.md.sal.binding.api.DataChangeListener}}
- * for WildCardedPath to {@link Group} and ForwardingRulesCommiter interface for methods:
- *  add, update and remove {@link Group} processing for
- *  {@link org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent}.
- *
- * @author <a href="mailto:vdemcak@cisco.com">Vaclav Demcak</a>
- *
- */
 public class GroupForwarder extends AbstractListeningCommiter<Group> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GroupForwarder.class);
@@ -51,22 +34,22 @@ public class GroupForwarder extends AbstractListeningCommiter<Group> {
     public GroupForwarder (final ForwardingRulesManager manager, final DataBroker db) {
         super(manager, Group.class);
         Preconditions.checkNotNull(db, "DataBroker can not be null!");
-        final DataTreeIdentifier<Group> treeId = new DataTreeIdentifier<>(LogicalDatastoreType.CONFIGURATION, getWildCardPath());
-
-        try {
-            SimpleTaskRetryLooper looper = new SimpleTaskRetryLooper(ForwardingRulesManagerImpl.STARTUP_LOOP_TICK,
-                    ForwardingRulesManagerImpl.STARTUP_LOOP_MAX_RETRIES);
-            listenerRegistration = looper.loopUntilNoException(new Callable<ListenerRegistration<GroupForwarder>>() {
-                @Override
-                public ListenerRegistration<GroupForwarder> call() throws Exception {
-                    return db.registerDataTreeChangeListener(treeId, GroupForwarder.this);
-                }
-            });
-        } catch (final Exception e) {
-            LOG.warn("FRM Group DataChange listener registration fail!");
-            LOG.debug("FRM Group DataChange listener registration fail ..", e);
-            throw new IllegalStateException("WestFlowForwarder startup fail! System needs restart.", e);
-        }
+//        final DataTreeIdentifier<Group> treeId = new DataTreeIdentifier<>(LogicalDatastoreType.CONFIGURATION, getWildCardPath());
+//
+//        try {
+//            SimpleTaskRetryLooper looper = new SimpleTaskRetryLooper(ForwardingRulesManagerImpl.STARTUP_LOOP_TICK,
+//                    ForwardingRulesManagerImpl.STARTUP_LOOP_MAX_RETRIES);
+//            listenerRegistration = looper.loopUntilNoException(new Callable<ListenerRegistration<GroupForwarder>>() {
+//                @Override
+//                public ListenerRegistration<GroupForwarder> call() throws Exception {
+//                    return db.registerDataTreeChangeListener(treeId, GroupForwarder.this);
+//                }
+//            });
+//        } catch (final Exception e) {
+//            LOG.warn("FRM Group DataChange listener registration fail!");
+//            LOG.debug("FRM Group DataChange listener registration fail ..", e);
+//            throw new IllegalStateException("FlowForwarder startup fail! System needs restart.", e);
+//        }
     }
 
     @Override
@@ -83,12 +66,6 @@ public class GroupForwarder extends AbstractListeningCommiter<Group> {
     }
 
     @Override
-    protected InstanceIdentifier<Group> getWildCardPath() {
-        return InstanceIdentifier.create(Nodes.class).child(Node.class)
-                .augmentation(FlowCapableNode.class).child(Group.class);
-    }
-
-    @Override
     public void remove(final InstanceIdentifier<Group> identifier, final Group removeDataObj) {
 
         final Group group = (removeDataObj);
@@ -99,7 +76,6 @@ public class GroupForwarder extends AbstractListeningCommiter<Group> {
         builder.setGroupRef(new GroupRef(identifier));
         builder.setTransactionUri(new Uri(provider.getNewTransactionId()));
         */
-        this.provider.getSalGroupService().removeGroup(builder.build());
     }
 
     @Override
@@ -116,8 +92,6 @@ public class GroupForwarder extends AbstractListeningCommiter<Group> {
         builder.setUpdatedGroup((new UpdatedGroupBuilder(updatedGroup)).build());
         builder.setOriginalGroup((new OriginalGroupBuilder(originalGroup)).build());
         */
-
-        this.provider.getSalGroupService().updateGroup(builder.build());
     }
 
     @Override
@@ -130,7 +104,6 @@ public class GroupForwarder extends AbstractListeningCommiter<Group> {
         builder.setGroupRef(new GroupRef(identifier));
         builder.setTransactionUri(new Uri(provider.getNewTransactionId()));
         */
-        this.provider.getSalGroupService().addGroup(builder.build());
     }
 }
 

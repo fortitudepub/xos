@@ -104,16 +104,12 @@ public class FlowNodeObserverImpl implements FlowNodeObserver {
 
     @Override
     public void flowNodeDisconnected(InstanceIdentifier<FlowCapableNode> disconnectedNode) {
-        provider.unregistrateNode(disconnectedNode);
         SdnSwitchManager.getSdnSwitchManager().switchDisconnected(disconnectedNode);
     }
 
     @Override
     public void flowNodeConnected(InstanceIdentifier<FlowCapableNode> connectedNode) {
-        if ( ! provider.isNodeActive(connectedNode)) {
-            provider.registrateNewNode(connectedNode);
-            SdnSwitchManager.getSdnSwitchManager().switchConnected(connectedNode);
-        }
+        SdnSwitchManager.getSdnSwitchManager().switchConnected(connectedNode);
     }
 
 /* Reconciliation will be done in the actor.
