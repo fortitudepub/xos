@@ -157,10 +157,10 @@ public class FlowForwarder extends AbstractListeningCommiter<UserFlow> {
 
     @Override
     public void add(final InstanceIdentifier<UserFlow> identifier, final UserFlow addDataObj) {
-        if (identifier.contains(this.westSwitchIID)) {
+        if (this.westSwitchIID.contains(identifier)) {
             SdnSwitchManager.getSdnSwitchManager()
                     .getWestSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_ADD, addDataObj), null);
-        } else if (identifier.contains(this.eastSwitchIID)) {
+        } else if (this.eastSwitchIID.contains(identifier)) {
             SdnSwitchManager.getSdnSwitchManager()
                     .getEastSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_ADD, addDataObj), null);
         }
