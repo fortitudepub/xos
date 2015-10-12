@@ -15,6 +15,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
@@ -53,7 +54,7 @@ public class OFpluginHelper {
         this.salFlowService = salFlowService;
     }
 
-    public void addFlow(String dpid, String flowName, Match match, Instructions instructions) {
+    public void addFlow(String dpid, String flowName, int priority, Match match, Instructions instructions) {
         // Staring building flow.
         FlowBuilder flowBuilder = new FlowBuilder().setTableId(Constants.XOS_APP_DEFAULT_TABLE_ID).setFlowName(flowName);
         // use its own hash code for id.
@@ -63,7 +64,7 @@ public class OFpluginHelper {
         // Put our Instruction in a list of Instructions
         flowBuilder.setMatch(match) //
                 .setInstructions(instructions) //
-                .setPriority(Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY) //
+                .setPriority(priority) //
                 .setBufferId(OFConstants.OFP_NO_BUFFER) //
                         //.setHardTimeout(flowHardTimeout)
                         //.setIdleTimeout(flowIdleTimeout)
@@ -91,5 +92,44 @@ public class OFpluginHelper {
         // flow mod message is write to the of channel, it does not ensure the flow entries is installed in the
         // switch, we must implement a logic to check this. either by periodically timer or some other means.
         salFlowService.addFlow(builder.build());
+    }
+
+    public void deleteFlow(String dpid, String flowName, int priority, Match match) {
+        // Staring building flow.
+        FlowBuilder flowBuilder = new FlowBuilder().setTableId(Constants.XOS_APP_DEFAULT_TABLE_ID).setFlowName(flowName);
+        // use its own hash code for id.
+        // TODO: copied from openflow plugin, we need to provide a persistent api for flow id generation
+        // better use priroity+flow_id_in_that priority as we defined in our design document.
+        flowBuilder.setId(new FlowId(Long.toString(flowBuilder.hashCode())));
+        // Put our Instruction in a list of Instructions
+        flowBuilder.setMatch(match) //
+                .setPriority(priority) //
+                .setBufferId(OFConstants.OFP_NO_BUFFER) //
+                        //.setHardTimeout(flowHardTimeout)
+                        //.setIdleTimeout(flowIdleTimeout)
+                        //.setCookie(new FlowCookie(BigInteger.valueOf(flowCookieInc.getAndIncrement())))
+                .setFlags(new FlowModFlags(false, false, false, false, false));
+
+        // Send the request to OF switch through SalFlowService.
+        InstanceIdentifier<Node> nodeIID =
+                InstanceIdentifier.builder(Nodes.class)
+                        .child(Node.class, new NodeKey(new NodeId(OFutils.BuildNodeIdUriByDpid(dpid)))).build();
+        TableKey flowTableKey = new TableKey(Constants.XOS_APP_DEFAULT_TABLE_ID);
+        InstanceIdentifier<Table> tableIID = nodeIID.builder()
+                .augmentation(FlowCapableNode.class)
+                .child(Table.class, flowTableKey)
+                .build();
+        FlowId flowId = new FlowId(flowName);
+        FlowKey flowKey = new FlowKey(flowId);
+        InstanceIdentifier<Flow> flowIID = tableIID.child(Flow.class, flowKey);
+        RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder(flowBuilder.build());
+        builder.setNode(new NodeRef(nodeIID));
+        builder.setFlowRef(new FlowRef(flowIID));
+        builder.setFlowTable(new FlowTableRef(tableIID));
+        builder.setTransactionUri(new Uri(flowBuilder.getId().getValue()));
+        // TODO: by reading openflowplugin code, seems the returned future of salflowservice only make sure the
+        // flow mod message is write to the of channel, it does not ensure the flow entries is installed in the
+        // switch, we must implement a logic to check this. either by periodically timer or some other means.
+        salFlowService.removeFlow(builder.build());
     }
 }

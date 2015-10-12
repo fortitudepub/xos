@@ -121,20 +121,13 @@ public class FlowForwarder extends AbstractListeningCommiter<UserFlow> {
 
     @Override
     public void remove(final InstanceIdentifier<UserFlow> identifier, final UserFlow removeDataObj) {
-        final RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder(removeDataObj);
-
-        /* TODO:
-        builder.setFlowRef(new FlowRef(identifier));
-        builder.setNode(new NodeRef(nodeIdent.firstIdentifierOf(Node.class)));
-        builder.setFlowTable(new FlowTableRef(nodeIdent.child(Table.class, tableKey)));
-
-        // This method is called only when a given flow object has been
-        // removed from datastore. So FRM always needs to set strict flag
-        // into remove-flow input so that only a flow entry associated with
-        // a given flow object is removed.
-        builder.setTransactionUri(new Uri(provider.getNewTransactionId())).
-                setStrict(Boolean.TRUE);
-        */
+        if (this.westSwitchIID.contains(identifier)) {
+            SdnSwitchManager.getSdnSwitchManager()
+                    .getWestSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_DELETE, removeDataObj), null);
+        } else if (this.eastSwitchIID.contains(identifier)) {
+            SdnSwitchManager.getSdnSwitchManager()
+                    .getEastSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_DELETE, removeDataObj), null);
+        }
     }
 
     @Override

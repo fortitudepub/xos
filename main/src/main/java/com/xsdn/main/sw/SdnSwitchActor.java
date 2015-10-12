@@ -199,6 +199,7 @@ public class SdnSwitchActor extends UntypedActor {
                 .setInstruction(ImmutableList.of(applyActionsInstructionBuilder.build()));
 
         this.ofpluginHelper.addFlow(this.dpid, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
+                                    Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY,
                                     matchBuilder.build(), instructionsBuilder.build());
 
         // Note: we need install default arp flow for both active and backup switch.
@@ -381,8 +382,13 @@ public class SdnSwitchActor extends UntypedActor {
         if (userFlowOp.op == OFutils.FLOW_ADD) {
             UserFlow userFlow = userFlowOp.userFlow;
 
-            this.ofpluginHelper.addFlow(this.dpid, userFlow.getFlowName(),
+            this.ofpluginHelper.addFlow(this.dpid, userFlow.getFlowName(), userFlow.getPriority().intValue(),
                     userFlow.getMatch(), userFlow.getInstructions());
+        } else if (userFlowOp.op == OFutils.FLOW_DELETE) {
+            UserFlow userFlow = userFlowOp.userFlow;
+
+            this.ofpluginHelper.deleteFlow(this.dpid, userFlow.getFlowName(), userFlow.getPriority().intValue(),
+                    userFlow.getMatch());
         }
     }
 
