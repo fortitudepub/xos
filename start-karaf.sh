@@ -10,7 +10,7 @@ mylocalrepo=${HOME}/.m2/repository
 # check whether patched, if patched, skip the patch process.
 modified=`cat ./karaf/target/assembly/etc/org.ops4j.pax.url.mvn.cfg | grep mylocalrepo`
 if [ "$?" -ne "0" ]; then
-    sed -i  "/system\.repository/afile:${mylocalrepo}@id-mylocalrepo,\\\\" ./karaf/target/assembly/etc/org.ops4j.pax.url.mvn.cfg
+    sed -i  "/system\.repository/afile:${mylocalrepo}@id=mylocalrepo,\\\\" ./karaf/target/assembly/etc/org.ops4j.pax.url.mvn.cfg
 fi
 
 cd ./karaf/target/assembly/bin
