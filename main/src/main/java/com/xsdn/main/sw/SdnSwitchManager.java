@@ -7,6 +7,7 @@ import akka.actor.Props;
 import com.google.common.collect.Sets;
 import com.xsdn.main.util.OFutils;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
@@ -16,6 +17,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import com.xsdn.main.sw.SdnSwitchActor;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.east.EastSwitch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.west.WestSwitch;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,52 +76,107 @@ public class SdnSwitchManager {
         return eastActorRef;
     }
 
-    // Set dpid to null clear the dpid
-    public void setWestSdnSwitchDpid(String dpid) {
+    public void updateWestSdnSwitch(WestSwitch westSwitch) {
+        ActorRef westSwitchActor = null;
+        String dpid = westSwitch.getDpid();
+
+        // TODO: check how to handle dpid delete?? whether we need to support it ??
+        // if we support change dpid, we must emulate switch disconnect event to the actor
+        // to let the actor clean it's own data.
+
         if (!dpid.equals("")) {
-            try {
-                String nodeIdUri = OFutils.BuildNodeIdUriByDpid(dpid);
-                westSdnSwitchNodeId = new NodeId(nodeIdUri);
-            } catch (NumberFormatException e) {
-                LOG.error("Configured dpid " + dpid + " is invalid");
-                westSdnSwitchNodeId = null;
+            // TODO: we currently not support update dpid (include delete it)once it's set.
+            if (westSdnSwitchNodeId != null) {
+                westSwitchActor = getSdnSwitchByNodeId(westSdnSwitchNodeId);
             }
+            else {
+                try {
+                    String nodeIdUri = OFutils.BuildNodeIdUriByDpid(dpid);
+                    westSdnSwitchNodeId = new NodeId(nodeIdUri);
+                } catch (NumberFormatException e) {
+                    LOG.error("Configured dpid " + dpid + " is invalid");
+                    westSdnSwitchNodeId = null;
+                }
 
-            if (null != westSdnSwitchNodeId) {
-                getSdnSwitchByNodeId(westSdnSwitchNodeId).tell(new SdnSwitchActor.DpIdCreated(dpid), null);
+                if (null != westSdnSwitchNodeId) {
+                    westSwitchActor = getSdnSwitchByNodeId(westSdnSwitchNodeId);
+                    westSwitchActor.tell(new SdnSwitchActor.DpIdCreated(dpid), null);
 
-                // Notify connected event if dpid is configured later.
-                if (connectedSwitches.containsKey(westSdnSwitchNodeId.getValue())) {
-                    getSdnSwitchByNodeId(westSdnSwitchNodeId).tell(new SdnSwitchActor.SwitchConnected(), null);
+                    // Notify connected event if dpid is configured later.
+                    if (connectedSwitches.containsKey(westSdnSwitchNodeId.getValue())) {
+                        westSwitchActor.tell(new SdnSwitchActor.SwitchConnected(), null);
+                    }
                 }
             }
         }
         else {
-            westSdnSwitchNodeId = null;
+            // TODO: dpid is invalid, nothing to do currently.
+            return;
         }
+
+        // Do other stuffs the switch can be updated, such as edge-router-interface-ip.
+        if (westSwitchActor != null) {
+
+            /* Since we subscribe in a switch granularity, we simply send the message the switch actor,
+            * let it to check whether there is a change in edge-router-interface-ip or other switch related data. */
+            westSwitchActor.tell(
+                    new SdnSwitchActor.QuaggaInterfaceIpUpdate(westSwitch.getQuaggaInterfaceIp()),
+                    null);
+            westSwitchActor.tell(
+                    new SdnSwitchActor.EdgeRouterInterfaceIpUpdate(westSwitch.getEdgeRouterInterfaceIp()),
+                    null);
+         }
     }
 
-    public void setEastSdnSwitchDpid(String dpid) {
+    public void updateEastSdnSwitch(EastSwitch eastSwitch) {
+        ActorRef eastSwitchActor = null;
+        String dpid = eastSwitch.getDpid();
+
+        // TODO: check how to handle dpid delete?? whether we need to support it ??
+        // if we support change dpid, we must emulate switch disconnect event to the actor
+        // to let the actor clean it's own data.
+
         if (!dpid.equals("")) {
-            try {
-                String nodeIdUri = OFutils.BuildNodeIdUriByDpid(dpid);
-                eastSdnSwitchNodeId = new NodeId(nodeIdUri);
-            } catch (NumberFormatException e) {
-                LOG.error("Configured dpid " + dpid + " is invalid");
-                eastSdnSwitchNodeId = null;
+            // TODO: we currently not support update dpid (include delete it)once it's set.
+            if (eastSdnSwitchNodeId != null) {
+                eastSwitchActor = getSdnSwitchByNodeId(eastSdnSwitchNodeId);
             }
+            else {
+                try {
+                    String nodeIdUri = OFutils.BuildNodeIdUriByDpid(dpid);
+                    eastSdnSwitchNodeId = new NodeId(nodeIdUri);
+                } catch (NumberFormatException e) {
+                    LOG.error("Configured dpid " + dpid + " is invalid");
+                    eastSdnSwitchNodeId = null;
+                }
 
-            if (null != eastSdnSwitchNodeId) {
-                getSdnSwitchByNodeId(eastSdnSwitchNodeId).tell(new SdnSwitchActor.DpIdCreated(dpid), null);
+                if (null != eastSdnSwitchNodeId) {
+                    eastSwitchActor = getSdnSwitchByNodeId(eastSdnSwitchNodeId);
+                    eastSwitchActor.tell(new SdnSwitchActor.DpIdCreated(dpid), null);
 
-                // Notify connected event if dpid is configured later.
-                if (connectedSwitches.containsKey(eastSdnSwitchNodeId.getValue())) {
-                    getSdnSwitchByNodeId(eastSdnSwitchNodeId).tell(new SdnSwitchActor.SwitchConnected(), null);
+                    // Notify connected event if dpid is configured later.
+                    if (connectedSwitches.containsKey(eastSdnSwitchNodeId.getValue())) {
+                        eastSwitchActor.tell(new SdnSwitchActor.SwitchConnected(), null);
+                    }
                 }
             }
         }
         else {
-            eastSdnSwitchNodeId = null;
+            // TODO: dpid is invalid, nothing to do currently.
+            return;
+        }
+
+        // Do other stuffs the switch can be updated, such as edge-router-interface-ip.
+        if (eastSwitchActor != null) {
+
+            /* Since we subscribe in a switch granularity, we simply send the message the switch actor,
+            * let it to check whether there is a change in edge-router-interface-ip or other switch related data. */
+            eastSwitchActor.tell(
+                    new SdnSwitchActor.QuaggaInterfaceIpUpdate(eastSwitch.getQuaggaInterfaceIp()),
+                    null);
+            eastSwitchActor.tell(
+                    new SdnSwitchActor.EdgeRouterInterfaceIpUpdate(eastSwitch.getEdgeRouterInterfaceIp()),
+                    null);
         }
     }
 

@@ -105,13 +105,19 @@ module xos {
             type string;
             description "SDN switch dpid in string format, this is provided by user through api.";
         }
-        
-        leaf ai-ospf-nexthop-ip {
+
+        leaf quagga-interface-ip {
             type inet:ipv4-address;
-            description "The IP of the interface which have quagga ospf enabled, we spoof its mac, and use this to
-                         drop the dns anycast ip by default until load balance group is installed by client of us.";
+            description "The IP of the ospf interface of the host which is connected to SDN switch and runs quagga, we
+                         spoof its mac and port, the mac will be used as ethernet source mac of the default route.";
         }
-        
+
+        leaf edge-router-interface-ip {
+            type inet:ipv4-address;
+            description "The IP of the interface which edge router enabled ospf to connect quagga, we spoof its mac
+                         and port, and use it as default route to forward dns-reply to the edge router.";
+        }
+
         list user-flow {
             key "id";
 

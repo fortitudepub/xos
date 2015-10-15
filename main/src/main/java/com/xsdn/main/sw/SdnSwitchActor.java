@@ -41,6 +41,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestination;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetTypeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.KnownOperation;
@@ -75,6 +76,9 @@ public class SdnSwitchActor extends UntypedActor {
     private NodeId nodeId;
     private int appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
     private boolean deviceConnected = false;
+    private Ipv4Address edgeRouterInterfaceIp = new Ipv4Address("255.255.255.255");
+    private Ipv4Address quaggaInterfaceIp = new Ipv4Address("255.255.255.255");
+
     private OFpluginHelper ofpluginHelper= null;
     private MdsalHelper mdsalHelper = null;
 
@@ -157,6 +161,23 @@ public class SdnSwitchActor extends UntypedActor {
         public UserFlowOp(short op, UserFlow userFlow) {
             this.op = op;
             this.userFlow = userFlow;
+        }
+    }
+
+    static public class QuaggaInterfaceIpUpdate {
+        private Ipv4Address address;
+
+        public QuaggaInterfaceIpUpdate(Ipv4Address address) {
+            this.address = address;
+        }
+    }
+
+
+    static public class EdgeRouterInterfaceIpUpdate {
+        private Ipv4Address address;
+
+        public EdgeRouterInterfaceIpUpdate(Ipv4Address address) {
+            this.address = address;
         }
     }
 
@@ -392,6 +413,73 @@ public class SdnSwitchActor extends UntypedActor {
         }
     }
 
+    // TODO: pending zhijun's mac spoofing impl
+    // the flow should be:
+    // match: ethertype(ipv4)+dst_mac(the virtual gw mac, if the mac is not present, should not install the flow)
+    // action: mod_eth_src(quagga interface mac),mod_eth_dst(edge router interface mac),output to uplink interface \
+    // (edge router interface ip port learned by mac snooping)
+    // in the current topology, the uplink can only be the link between the SDN switch and the L2 switch.
+
+    private void addDftRouteFlow() {
+        // Match.
+        EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
+                .setEthernetType(new EthernetTypeBuilder()
+                        .setType(new EtherType(Long.valueOf(KnownEtherType.Ipv4.getIntValue()))).build());
+        MatchBuilder matchBuilder = new MatchBuilder().setEthernetMatch(ethernetMatchBuilder.build());
+
+
+        // Instrutions.
+        ActionBuilder actionBuilder = new ActionBuilder()
+                .setOrder(0)
+                .setKey(new ActionKey(0))
+                .setAction(new OutputActionCaseBuilder()
+                        .setOutputAction(new OutputActionBuilder()
+                                .setMaxLength(0xffff)
+                                .setOutputNodeConnector(new Uri(OutputPortValues.CONTROLLER.toString()))
+                                .build())
+                        .build());
+        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match match = matchBuilder.build();
+        List<Action> actions = new ArrayList<Action>();
+        actions.add(actionBuilder.build());
+        ApplyActions applyActions = new ApplyActionsBuilder().setAction(actions).build();
+        InstructionBuilder applyActionsInstructionBuilder = new InstructionBuilder()
+                .setOrder(0)
+                .setInstruction(new ApplyActionsCaseBuilder()
+                        .setApplyActions(applyActions)
+                        .build());
+        InstructionsBuilder instructionsBuilder = new InstructionsBuilder() //
+                .setInstruction(ImmutableList.of(applyActionsInstructionBuilder.build()));
+
+        this.ofpluginHelper.addFlow(this.dpid, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
+                Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY,
+                matchBuilder.build(), instructionsBuilder.build());
+
+        // Note: we need install default arp flow for both active and backup switch.
+
+        // Action 2: store to our md sal datastore.
+
+        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
+                matchBuilder.build(), instructionsBuilder.build());
+
+        LOG.info("Pushed init flow {} to the switch {}", "_XOS_DFT_ARP_0", this.dpid);
+    }
+
+    private void processEdgeRouterInterfaceIpUpdate(EdgeRouterInterfaceIpUpdate update) {
+        // Only handle changes.
+        if (!update.equals(this.edgeRouterInterfaceIp)) {
+            // TODO: use zhijun's local db to obtain the interface port and mac, then construct a flow for
+            // default rule.
+        }
+    }
+
+    private void processQuaggaInterfaceIpUpdate(QuaggaInterfaceIpUpdate update) {
+        // Only handle changes.
+        if (!update.equals(this.quaggaInterfaceIp)) {
+            // TODO: use zhijun's local db to obtain the interface port and mac, then construct a flow for
+            // default rule.
+        }
+    }
+
     public void onReceive(Object message) throws Exception {
         if (message instanceof DpIdCreated) {
             processDpid(((DpIdCreated) (message)).getDpId());
@@ -409,8 +497,11 @@ public class SdnSwitchActor extends UntypedActor {
             processArp((ArpPacketIn)message);
         } else if (message instanceof UserFlowOp) {
             processUserFlowOp((UserFlowOp)message);
-        }
-        else {
+        } else if (message instanceof EdgeRouterInterfaceIpUpdate) {
+            processEdgeRouterInterfaceIpUpdate((EdgeRouterInterfaceIpUpdate)message);
+        } else if (message instanceof QuaggaInterfaceIpUpdate) {
+            processQuaggaInterfaceIpUpdate((QuaggaInterfaceIpUpdate)message);
+        } else {
             unhandled(message);
         }
     }

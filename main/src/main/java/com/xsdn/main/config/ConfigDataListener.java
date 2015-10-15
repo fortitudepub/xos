@@ -95,17 +95,9 @@ public class ConfigDataListener implements DataChangeListener {
         if (updDelFlag) {
             LOG.debug("entering processInstanceId");
             if (instanceId.getTargetType().equals(WestSwitch.class)) {
-                WestSwitch westSw = (WestSwitch) data;
-
-                LOG.info("New west sdn switch added " + westSw.getDpid());
-
-                this.sdnSwitchManager.setWestSdnSwitchDpid(westSw.getDpid());
+                this.sdnSwitchManager.updateWestSdnSwitch((WestSwitch)data);
             } else if (instanceId.getTargetType().equals(EastSwitch.class)) {
-                EastSwitch eastSw = (EastSwitch) data;
-
-                LOG.info("New east sdn switch added " + eastSw.getDpid());
-
-                this.sdnSwitchManager.setEastSdnSwitchDpid(eastSw.getDpid());
+                this.sdnSwitchManager.updateEastSdnSwitch((EastSwitch)data);
             } else if (instanceId.getTargetType().equals(AiManagedSubnet.class)) {
                 LOG.info("New subnet added");
 
