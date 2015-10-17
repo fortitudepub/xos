@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # patch configuration file
 mkdir -p ./karaf/target/assembly/configuration/initial
