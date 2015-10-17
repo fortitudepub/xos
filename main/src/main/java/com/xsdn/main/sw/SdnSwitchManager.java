@@ -119,12 +119,21 @@ public class SdnSwitchManager {
 
             /* Since we subscribe in a switch granularity, we simply send the message the switch actor,
             * let it to check whether there is a change in edge-router-interface-ip or other switch related data. */
-            westSwitchActor.tell(
-                    new SdnSwitchActor.QuaggaInterfaceIpUpdate(westSwitch.getQuaggaInterfaceIp()),
-                    null);
-            westSwitchActor.tell(
-                    new SdnSwitchActor.EdgeRouterInterfaceIpUpdate(westSwitch.getEdgeRouterInterfaceIp()),
-                    null);
+            if (null != westSwitch.getVirtualGatewayMac()) {
+                westSwitchActor.tell(
+                        new SdnSwitchActor.VirtualGatewayMacUpdate(westSwitch.getVirtualGatewayMac()),
+                        null);
+            }
+            if (null != westSwitch.getQuaggaInterfaceIp()) {
+                westSwitchActor.tell(
+                        new SdnSwitchActor.QuaggaInterfaceIpUpdate(westSwitch.getQuaggaInterfaceIp()),
+                        null);
+            }
+            if (null != westSwitch.getEdgeRouterInterfaceIp()) {
+                westSwitchActor.tell(
+                        new SdnSwitchActor.EdgeRouterInterfaceIpUpdate(westSwitch.getEdgeRouterInterfaceIp()),
+                        null);
+            }
          }
     }
 
@@ -171,12 +180,21 @@ public class SdnSwitchManager {
 
             /* Since we subscribe in a switch granularity, we simply send the message the switch actor,
             * let it to check whether there is a change in edge-router-interface-ip or other switch related data. */
-            eastSwitchActor.tell(
-                    new SdnSwitchActor.QuaggaInterfaceIpUpdate(eastSwitch.getQuaggaInterfaceIp()),
-                    null);
-            eastSwitchActor.tell(
-                    new SdnSwitchActor.EdgeRouterInterfaceIpUpdate(eastSwitch.getEdgeRouterInterfaceIp()),
-                    null);
+            if (null != eastSwitch.getVirtualGatewayMac()) {
+                eastSwitchActor.tell(
+                        new SdnSwitchActor.VirtualGatewayMacUpdate(eastSwitch.getVirtualGatewayMac()),
+                        null);
+            }
+            if (null != eastSwitch.getQuaggaInterfaceIp()) {
+                eastSwitchActor.tell(
+                        new SdnSwitchActor.QuaggaInterfaceIpUpdate(eastSwitch.getQuaggaInterfaceIp()),
+                        null);
+            }
+            if (null != eastSwitch.getEdgeRouterInterfaceIp()) {
+                eastSwitchActor.tell(
+                        new SdnSwitchActor.EdgeRouterInterfaceIpUpdate(eastSwitch.getEdgeRouterInterfaceIp()),
+                        null);
+            }
         }
     }
 

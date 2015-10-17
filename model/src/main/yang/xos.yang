@@ -52,11 +52,14 @@ module xos {
             description "IPv4 address of the virtual gateway interface";
         }
 
+        /* The mac should moved to the SDN switch container as most L3 HW switch use a single router mac,
+           add a virtual-gatway-mac per subnet is duplicate.
         leaf virtual-gateway-mac {
             type yang:mac-address;
             description "MAC address of the virtual gateway interface, will be used for ARP proxy and routing
                          identification.";
         }
+        */
     }
 
     /* Define the host connected directly or indirectly to the SDN switch, the IP address should be
@@ -104,6 +107,12 @@ module xos {
         leaf dpid {
             type string;
             description "SDN switch dpid in string format, this is provided by user through api.";
+        }
+
+        leaf virtual-gateway-mac {
+            type yang:mac-address;
+            description "MAC address of the virtual gateway, will be used to proxy gateway ARP request for subnet
+                        and for routing packet identification.";
         }
 
         leaf quagga-interface-ip {

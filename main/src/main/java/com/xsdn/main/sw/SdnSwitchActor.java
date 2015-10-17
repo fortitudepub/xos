@@ -5,9 +5,6 @@ import akka.actor.UntypedActor;
 import akka.japi.Creator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.xsdn.main.ha.XosAppStatusMgr;
 import com.xsdn.main.packet.ArpPacketBuilder;
 import com.xsdn.main.util.EtherAddress;
@@ -15,16 +12,16 @@ import com.xsdn.main.util.Ip4Network;
 import com.xsdn.main.util.OFutils;
 import com.xsdn.main.util.Constants;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetDlDstActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetDlSrcActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.set.dl.dst.action._case.SetDlDstActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.set.dl.src.action._case.SetDlSrcActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
@@ -35,15 +32,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Output
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.ApplyActionsCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActionsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.Instruction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.*;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnectorKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestination;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestinationBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetTypeBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;import org.opendaylight.yang.gen.v1.urn.opendaylight.openflow.common.action.rev150203.action.grouping.action.choice.set.field._case.SetFieldActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.KnownOperation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.arp.packet.received.packet.chain.packet.ArpPacket;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.basepacket.rev140528.packet.chain.grp.packet.chain.packet.RawPacket;
@@ -76,10 +74,11 @@ public class SdnSwitchActor extends UntypedActor {
     private NodeId nodeId;
     private int appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
     private boolean deviceConnected = false;
+    private MacAddress vGMAC = new MacAddress(Constants.INVALID_MAC_ADDRESS);
     private Ipv4Address edgeRouterInterfaceIp = new Ipv4Address("255.255.255.255");
     private Ipv4Address quaggaInterfaceIp = new Ipv4Address("255.255.255.255");
 
-    private OFpluginHelper ofpluginHelper= null;
+    private OFpluginHelper ofpluginHelper = null;
     private MdsalHelper mdsalHelper = null;
 
     private SdnSwitchActor(final PacketProcessingService packetProcessingService,
@@ -164,6 +163,15 @@ public class SdnSwitchActor extends UntypedActor {
         }
     }
 
+    static public class VirtualGatewayMacUpdate {
+        private MacAddress address;
+
+        public VirtualGatewayMacUpdate(MacAddress address) {
+            this.address = address;
+        }
+    }
+
+
     static public class QuaggaInterfaceIpUpdate {
         private Ipv4Address address;
 
@@ -197,7 +205,7 @@ public class SdnSwitchActor extends UntypedActor {
         MatchBuilder matchBuilder = new MatchBuilder().setEthernetMatch(ethernetMatchBuilder.build());
 
 
-        // Instrutions.
+        // Actions.
         ActionBuilder actionBuilder = new ActionBuilder()
                 .setOrder(0)
                 .setKey(new ActionKey(0))
@@ -207,7 +215,6 @@ public class SdnSwitchActor extends UntypedActor {
                                 .setOutputNodeConnector(new Uri(OutputPortValues.CONTROLLER.toString()))
                                 .build())
                         .build());
-        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match match = matchBuilder.build();
         List<Action> actions = new ArrayList<Action>();
         actions.add(actionBuilder.build());
         ApplyActions applyActions = new ApplyActionsBuilder().setAction(actions).build();
@@ -220,17 +227,17 @@ public class SdnSwitchActor extends UntypedActor {
                 .setInstruction(ImmutableList.of(applyActionsInstructionBuilder.build()));
 
         this.ofpluginHelper.addFlow(this.dpid, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
-                                    Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY,
-                                    matchBuilder.build(), instructionsBuilder.build());
+                Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY,
+                matchBuilder.build(), instructionsBuilder.build());
 
         // Note: we need install default arp flow for both active and backup switch.
 
         // Action 2: store to our md sal datastore.
 
         this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
-                                      matchBuilder.build(), instructionsBuilder.build());
+                matchBuilder.build(), instructionsBuilder.build());
 
-        LOG.info("Pushed init flow {} to the switch {}", "_XOS_DFT_ARP_0", this.dpid);
+        LOG.info("Pushed init flow {} to the switch {}", Constants.XOS_APP_DFT_ARP_FLOW_NAME, this.dpid);
     }
 
     private void addInitFlows() {
@@ -250,8 +257,7 @@ public class SdnSwitchActor extends UntypedActor {
         }
 
         if (this.appStatus != status) {
-            if (status == XosAppStatusMgr.APP_STATUS_ACTIVE)
-            {
+            if (status == XosAppStatusMgr.APP_STATUS_ACTIVE) {
                 // We are now running active controller.
                 // There will be quite complicate logic, may be we should spawn a seperate actor to handle all
                 // the sub task.
@@ -309,7 +315,7 @@ public class SdnSwitchActor extends UntypedActor {
         this.deviceConnected = false;
     }
 
-    private void processSubnetUpdate(ManagedSubnetUpdate subnetUpdate)  {
+    private void processSubnetUpdate(ManagedSubnetUpdate subnetUpdate) {
         // TODO: this code need to be refactored because I only want to extract the subnet information
         // more santity check need to be done.
         // And also, we should build a auxiliary map that use the virtual gateway ip as index to help
@@ -327,7 +333,10 @@ public class SdnSwitchActor extends UntypedActor {
         String dip = pktIn.pkt.getDestinationProtocolAddress();
         Ipv4Address dIPv4 = new Ipv4Address(dip);
         boolean isVGWARP = false;
-        MacAddress vMAC = null;
+
+        if (vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
+            LOG.error("Virtual Gateway MAC address is not configured");
+        }
 
         // Locate whether this arp request is for
         Iterator<Entry<Short, AiManagedSubnet>> it = this.subnetMap.entrySet().iterator();
@@ -335,10 +344,8 @@ public class SdnSwitchActor extends UntypedActor {
             Entry<Short, AiManagedSubnet> entry = it.next();
             AiManagedSubnet subnet = entry.getValue();
             if ((subnet.getVirtualGateway() != null) && (subnet.getVirtualGateway().getVirtualGatewayIp() != null)
-                    && (subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4)))
-            {
+                    && (subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4))) {
                 isVGWARP = true;
-                vMAC = subnet.getVirtualGateway().getVirtualGatewayMac();
                 break;
             }
         }
@@ -352,42 +359,40 @@ public class SdnSwitchActor extends UntypedActor {
             return true; // It should be handled by us, but it's not request.
         }
 
-        if (vMAC != null) {
-            TransmitPacketInput arpReply;
+        TransmitPacketInput arpReply;
 
-            try {
-                // Construct ARP Reply for virtual GW.
-                // Virtual GW IP will be used as SPA, Virtual GW MAC will be ethernet source and SHA.
-                Ip4Network spa = new Ip4Network(dIPv4.getValue());
-                Ip4Network tpa = new Ip4Network(pktIn.pkt.getSourceProtocolAddress());
-                // No VLAN in ai deployment.
-                Ethernet ether = new ArpPacketBuilder()
-                        .setAsReply()
-                        .setSenderProtocolAddress(spa)
-                        .build(new EtherAddress(vMAC.getValue()),
-                                new EtherAddress(pktIn.pkt.getSourceHardwareAddress()),
-                                tpa);
+        try {
+            // Construct ARP Reply for virtual GW.
+            // Virtual GW IP will be used as SPA, Virtual GW MAC will be ethernet source and SHA.
+            Ip4Network spa = new Ip4Network(dIPv4.getValue());
+            Ip4Network tpa = new Ip4Network(pktIn.pkt.getSourceProtocolAddress());
+            // No VLAN in ai deployment.
+            Ethernet ether = new ArpPacketBuilder()
+                    .setAsReply()
+                    .setSenderProtocolAddress(spa)
+                    .build(new EtherAddress(vGMAC.getValue()),
+                            new EtherAddress(pktIn.pkt.getSourceHardwareAddress()),
+                            tpa);
 
-                InstanceIdentifier<Node> node = pktIn.rawPkt.getIngress().getValue().firstIdentifierOf(Node.class);
+            InstanceIdentifier<Node> node = pktIn.rawPkt.getIngress().getValue().firstIdentifierOf(Node.class);
 
-                arpReply = new TransmitPacketInputBuilder()
-                        .setPayload(ether.serialize())
-                        .setNode(new NodeRef(node))
-                        .setEgress(pktIn.rawPkt.getIngress())
-                        .build();
-            } catch (Exception e) {
-                LOG.error("Failed to build arp reply for vgw " + dIPv4.getValue() +
-                        "with request from " + pktIn.pkt.getSourceProtocolAddress());
-                return true;
-            }
-
-            packetProcessingService.transmitPacket(arpReply);
+            arpReply = new TransmitPacketInputBuilder()
+                    .setPayload(ether.serialize())
+                    .setNode(new NodeRef(node))
+                    .setEgress(pktIn.rawPkt.getIngress())
+                    .build();
+        } catch (Exception e) {
+            LOG.error("Failed to build arp reply for vgw " + dIPv4.getValue() +
+                    "with request from " + pktIn.pkt.getSourceProtocolAddress());
+            return true;
         }
+
+        packetProcessingService.transmitPacket(arpReply);
 
         return true;
     }
 
-    private void processArp(ArpPacketIn pktIn)  {
+    private void processArp(ArpPacketIn pktIn) {
         boolean vgwHandled = false;
         // Handle arp request for vmac
         vgwHandled = processArpReqForVGW(pktIn);
@@ -419,28 +424,82 @@ public class SdnSwitchActor extends UntypedActor {
     // action: mod_eth_src(quagga interface mac),mod_eth_dst(edge router interface mac),output to uplink interface \
     // (edge router interface ip port learned by mac snooping)
     // in the current topology, the uplink can only be the link between the SDN switch and the L2 switch.
-
-    private void addDftRouteFlow() {
-        // Match.
+    // So the input of this function is:
+    // 1. src_mac (quagga interface mac)
+    // 2. dst_mac (edge router interface mac)
+    // 3. output_of_port (port where edge router interface mac learned)
+    // 4. vmac of this sdn switch.
+    private void addDftRouteFlow(MacAddress vGMAC, MacAddress srcMAC, MacAddress dstMAC, NodeConnectorRef output) {
+        // Match: IPV4+VGMAC.
         EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
                 .setEthernetType(new EthernetTypeBuilder()
-                        .setType(new EtherType(Long.valueOf(KnownEtherType.Ipv4.getIntValue()))).build());
+                        .setType(new EtherType(Long.valueOf(KnownEtherType.Ipv4.getIntValue()))).build())
+                .setEthernetDestination(new EthernetDestinationBuilder().setAddress(vGMAC).build());
         MatchBuilder matchBuilder = new MatchBuilder().setEthernetMatch(ethernetMatchBuilder.build());
 
 
-        // Instrutions.
-        ActionBuilder actionBuilder = new ActionBuilder()
+        // Actions:mod_dl_src,mod_dl_dst,output
+        // NOTE: we only support OPENFLOW 1.3, so we use set_field action.
+        // and we should not use dec_ip_ttl because most of hw switch does not support it.
+
+        /* We do not need to create setfield aciotion explicitly, flowconverter in openflowplugin
+           will do that for me, leave these code for future reference.
+
+           See flowconverter class in openflowplugin.
+        List<MatchEntry> setFieldMatchEntries = new ArrayList<MatchEntry>();
+        MatchEntryBuilder srcMatchEntryBuilder = new MatchEntryBuilder();
+        srcMatchEntryBuilder.setOxmClass(OpenflowBasicClass.class)
+                            .setOxmMatchField(EthSrc.class)
+                            .setHasMask(false)
+                            .setMatchEntryValue(new EthSrcCaseBuilder()
+                                    .setEthSrc(new EthSrcBuilder()
+                                            .setMacAddress(srcMAC)
+                                            .build())
+                                    .build());
+        MatchEntryBuilder dstMatchEntryBuilder = new MatchEntryBuilder();
+        dstMatchEntryBuilder.setOxmClass(OpenflowBasicClass.class)
+                .setOxmMatchField(EthDst.class)
+                .setHasMask(false)
+                .setMatchEntryValue(new EthDstCaseBuilder()
+                        .setEthDst(new EthDstBuilder()
+                                .setMacAddress(dstMAC)
+                                .build())
+                        .build());
+        setFieldMatchEntries.add(srcMatchEntryBuilder.build());
+        setFieldMatchEntries.add(dstMatchEntryBuilder.build());
+        */
+
+        ActionBuilder modDlSrcActionBuilder = new ActionBuilder()
+                .setOrder(0)
+                .setKey(new ActionKey(0))
+                .setAction(new SetDlSrcActionCaseBuilder()
+                        .setSetDlSrcAction(new SetDlSrcActionBuilder()
+                                .setAddress(srcMAC)
+                                .build())
+                        .build());
+        ActionBuilder modDlDstActionBuilder = new ActionBuilder()
+                .setOrder(0)
+                .setKey(new ActionKey(0))
+                .setAction(new SetDlDstActionCaseBuilder()
+                        .setSetDlDstAction(new SetDlDstActionBuilder()
+                                .setAddress(dstMAC)
+                                .build())
+                        .build());
+        Uri destPortUri = output.getValue().firstKeyOf(NodeConnector.class, NodeConnectorKey.class).getId();
+        ActionBuilder outputActionBuilder = new ActionBuilder()
                 .setOrder(0)
                 .setKey(new ActionKey(0))
                 .setAction(new OutputActionCaseBuilder()
                         .setOutputAction(new OutputActionBuilder()
                                 .setMaxLength(0xffff)
-                                .setOutputNodeConnector(new Uri(OutputPortValues.CONTROLLER.toString()))
+                                .setOutputNodeConnector(destPortUri)
                                 .build())
                         .build());
-        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match match = matchBuilder.build();
+
         List<Action> actions = new ArrayList<Action>();
-        actions.add(actionBuilder.build());
+        actions.add(modDlSrcActionBuilder.build());
+        actions.add(modDlDstActionBuilder.build());
+        actions.add(outputActionBuilder.build());
         ApplyActions applyActions = new ApplyActionsBuilder().setAction(actions).build();
         InstructionBuilder applyActionsInstructionBuilder = new InstructionBuilder()
                 .setOrder(0)
@@ -450,33 +509,58 @@ public class SdnSwitchActor extends UntypedActor {
         InstructionsBuilder instructionsBuilder = new InstructionsBuilder() //
                 .setInstruction(ImmutableList.of(applyActionsInstructionBuilder.build()));
 
-        this.ofpluginHelper.addFlow(this.dpid, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
-                Constants.XOS_APP_DFT_ARP_FLOW_PRIORITY,
+        this.ofpluginHelper.addFlow(this.dpid, Constants.XOS_APP_DFT_ROUTE_FLOW_NAME,
+                Constants.XOS_APP_DFT_ROUTE_FLOW_PRIORITY,
                 matchBuilder.build(), instructionsBuilder.build());
 
         // Note: we need install default arp flow for both active and backup switch.
 
         // Action 2: store to our md sal datastore.
 
-        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
+        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_APP_DFT_ROUTE_FLOW_NAME,
                 matchBuilder.build(), instructionsBuilder.build());
 
-        LOG.info("Pushed init flow {} to the switch {}", "_XOS_DFT_ARP_0", this.dpid);
+        LOG.info("Pushed init flow {} to the switch {}", Constants.XOS_APP_DFT_ROUTE_FLOW_NAME, this.dpid);
+    }
+
+    private void tryAddDftRouteFlow() {
+        // TODO: check condition that required for addDftRouteFlow is satisfied, then
+        // call it to add dft route flow.
+
+        // TEST CODE:
+
+        InstanceIdentifier<NodeConnector> iid = InstanceIdentifier.builder(Nodes.class)
+                .child(Node.class, new NodeKey(new NodeId(OFutils.BuildNodeIdUriByDpid(dpid))))
+                .child(NodeConnector.class, new NodeConnectorKey(new NodeConnectorId("openflow:1")))
+                .build();
+        addDftRouteFlow(this.vGMAC, new MacAddress("00:00:00:00:00:02"),
+                new MacAddress("00:00:00:00:00:01"),
+                new NodeConnectorRef(iid));
+    }
+
+    private void processVirtualGatewayMacUpdate(VirtualGatewayMacUpdate update) {
+        // Only handle changes.
+        if (!update.address.equals(this.vGMAC)) {
+            this.vGMAC = update.address;
+            tryAddDftRouteFlow();
+        }
     }
 
     private void processEdgeRouterInterfaceIpUpdate(EdgeRouterInterfaceIpUpdate update) {
         // Only handle changes.
-        if (!update.equals(this.edgeRouterInterfaceIp)) {
+        if (!update.address.equals(this.edgeRouterInterfaceIp)) {
             // TODO: use zhijun's local db to obtain the interface port and mac, then construct a flow for
             // default rule.
+            tryAddDftRouteFlow();
         }
     }
 
     private void processQuaggaInterfaceIpUpdate(QuaggaInterfaceIpUpdate update) {
         // Only handle changes.
-        if (!update.equals(this.quaggaInterfaceIp)) {
+        if (!update.address.equals(this.quaggaInterfaceIp)) {
             // TODO: use zhijun's local db to obtain the interface port and mac, then construct a flow for
             // default rule.
+            tryAddDftRouteFlow();
         }
     }
 
@@ -491,16 +575,18 @@ public class SdnSwitchActor extends UntypedActor {
             processAppStatusUpdate(((AppStatusUpdate) (message)).appStatus);
         } else if (message instanceof ProbeArpOnce) {
             LOG.info("TO BE IMPLEMENTED: ARP PROBE");
-        } else if (message instanceof  ManagedSubnetUpdate) {
-            processSubnetUpdate((ManagedSubnetUpdate)message);
-        } else if (message instanceof  ArpPacketIn) {
-            processArp((ArpPacketIn)message);
+        } else if (message instanceof ManagedSubnetUpdate) {
+            processSubnetUpdate((ManagedSubnetUpdate) message);
+        } else if (message instanceof ArpPacketIn) {
+            processArp((ArpPacketIn) message);
         } else if (message instanceof UserFlowOp) {
-            processUserFlowOp((UserFlowOp)message);
+            processUserFlowOp((UserFlowOp) message);
+        } else if (message instanceof VirtualGatewayMacUpdate) {
+            processVirtualGatewayMacUpdate((VirtualGatewayMacUpdate) message);
         } else if (message instanceof EdgeRouterInterfaceIpUpdate) {
-            processEdgeRouterInterfaceIpUpdate((EdgeRouterInterfaceIpUpdate)message);
+            processEdgeRouterInterfaceIpUpdate((EdgeRouterInterfaceIpUpdate) message);
         } else if (message instanceof QuaggaInterfaceIpUpdate) {
-            processQuaggaInterfaceIpUpdate((QuaggaInterfaceIpUpdate)message);
+            processQuaggaInterfaceIpUpdate((QuaggaInterfaceIpUpdate) message);
         } else {
             unhandled(message);
         }
