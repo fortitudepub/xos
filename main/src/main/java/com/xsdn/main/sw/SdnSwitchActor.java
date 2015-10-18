@@ -423,7 +423,7 @@ public class SdnSwitchActor extends UntypedActor {
         boolean isVGWARP = false;
         Short subnetId = null;
 
-        if (vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
+        if (this.vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
             LOG.error("Virtual Gateway MAC address is not configured");
         }
 
@@ -464,7 +464,7 @@ public class SdnSwitchActor extends UntypedActor {
             Ethernet ether = new ArpPacketBuilder()
                     .setAsReply()
                     .setSenderProtocolAddress(spa)
-                    .build(new EtherAddress(vGMAC.getValue()),
+                    .build(new EtherAddress(this.vGMAC.getValue()),
                             new EtherAddress(pktIn.pkt.getSourceHardwareAddress()),
                             tpa);
 
@@ -501,8 +501,6 @@ public class SdnSwitchActor extends UntypedActor {
      * Note: WZJ, process arp probe
      */
     private void processArpProbe() {
-        LOG.info("TO BE IMPLEMENTED: ARP PROBE");
-
         for (Short key : this.subnetTracer.keySet()) {
             sendHostsArpProbe(key, this.subnetTracer.get(key));
         }
@@ -712,7 +710,7 @@ public class SdnSwitchActor extends UntypedActor {
             return;
         }
 
-        if (vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
+        if (this.vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
             LOG.error("Virtual gateway mac is not configured.");
             return;
         }
@@ -732,7 +730,7 @@ public class SdnSwitchActor extends UntypedActor {
                 /* ARP packet build */
                 Ethernet ether = new ArpPacketBuilder().setAsRequest()
                     .setSenderProtocolAddress(spa)
-                        .build(new EtherAddress(vGMAC.getValue()), EtherAddress.BROADCAST, tpa);
+                        .build(new EtherAddress(this.vGMAC.getValue()), EtherAddress.BROADCAST, tpa);
 
                 String swId = OFutils.BuildNodeIdUriByDpid(this.dpid);
                 NodeKey swNodeKey = new NodeKey(new NodeId(swId));
@@ -886,8 +884,8 @@ public class SdnSwitchActor extends UntypedActor {
         }
 
         addDftRouteFlow(this.vGMAC,
-                new MacAddress(this.getHostInfoByIpAddr(this.quaggaInterfaceIp).getMac()),
-                new MacAddress(this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getMac()),
+                this.getHostInfoByIpAddr(this.quaggaInterfaceIp).getMac(),
+                this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getMac(),
                 this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getIngress());
     }
 
@@ -895,6 +893,7 @@ public class SdnSwitchActor extends UntypedActor {
         // Only handle changes.
         if (!update.address.equals(this.vGMAC)) {
             this.vGMAC = update.address;
+            LOG.info("Update VGMac to {}", this.vGMAC);
             tryAddDftRouteFlow();
         }
     }
@@ -902,8 +901,7 @@ public class SdnSwitchActor extends UntypedActor {
     private void processEdgeRouterInterfaceIpUpdate(EdgeRouterInterfaceIpUpdate update) {
         // Only handle changes.
         if (!update.address.equals(this.edgeRouterInterfaceIp)) {
-            // TODO: use zhijun's local db to obtain the interface port and mac, then construct a flow for
-            // default rule.
+            this.edgeRouterInterfaceIp = update.address;
             tryAddDftRouteFlow();
         }
     }
@@ -911,8 +909,7 @@ public class SdnSwitchActor extends UntypedActor {
     private void processQuaggaInterfaceIpUpdate(QuaggaInterfaceIpUpdate update) {
         // Only handle changes.
         if (!update.address.equals(this.quaggaInterfaceIp)) {
-            // TODO: use zhijun's local db to obtain the interface port and mac, then construct a flow for
-            // default rule.
+            this.quaggaInterfaceIp = update.address;
             tryAddDftRouteFlow();
         }
     }
@@ -929,7 +926,8 @@ public class SdnSwitchActor extends UntypedActor {
         } else if (message instanceof ProbeArpOnce) {
             processArpProbe();
         } else if (message instanceof NotifyDefaultRoute) {
-            LOG.info("Notify add  default route");
+            // The message is a signal to us that we can try to re-add the default route.
+            tryAddDftRouteFlow();
         } else if (message instanceof ManagedSubnetUpdate) {
             processSubnetUpdate((ManagedSubnetUpdate) message);
         } else if (message instanceof ArpPacketIn) {
