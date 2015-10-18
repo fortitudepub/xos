@@ -78,8 +78,8 @@ public class SdnSwitchActor extends UntypedActor {
     private int appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
     private boolean deviceConnected = false;
     private MacAddress vGMAC = new MacAddress(Constants.INVALID_MAC_ADDRESS);
-    private Ipv4Address edgeRouterInterfaceIp = new Ipv4Address("255.255.255.255");
-    private Ipv4Address quaggaInterfaceIp = new Ipv4Address("255.255.255.255");
+    private Ipv4Address edgeRouterInterfaceIp = new Ipv4Address(Constants.INVALID_IP_ADDRESS);
+    private Ipv4Address quaggaInterfaceIp = new Ipv4Address(Constants.INVALID_IP_ADDRESS);
 
     private OFpluginHelper ofpluginHelper = null;
     private MdsalHelper mdsalHelper = null;
@@ -826,19 +826,29 @@ public class SdnSwitchActor extends UntypedActor {
         LOG.info("Pushed init flow {} to the switch {}", Constants.XOS_APP_DFT_ROUTE_FLOW_NAME, this.dpid);
     }
 
+    // TODO: need handle information update.
     private void tryAddDftRouteFlow() {
-        // TODO: check condition that required for addDftRouteFlow is satisfied, then
-        // call it to add dft route flow.
+        // Check vgmac is configured.
+        if (this.vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
+            return;
+        }
 
-        // TEST CODE:
+        // Check quagga interface ip is configured and it's mac (default route source mac) is probed.
+        if (this.quaggaInterfaceIp.equals(Constants.INVALID_IP_ADDRESS) ||
+                (null == this.getHostInfoByIpAddr(this.quaggaInterfaceIp))) {
+            return;
+        }
 
-        InstanceIdentifier<NodeConnector> iid = InstanceIdentifier.builder(Nodes.class)
-                .child(Node.class, new NodeKey(new NodeId(OFutils.BuildNodeIdUriByDpid(dpid))))
-                .child(NodeConnector.class, new NodeConnectorKey(new NodeConnectorId("openflow:1")))
-                .build();
-        addDftRouteFlow(this.vGMAC, new MacAddress("00:00:00:00:00:02"),
-                new MacAddress("00:00:00:00:00:01"),
-                new NodeConnectorRef(iid));
+        // Check edge router interface ip is configured and it's mac (default route dst mac) & port is probed.
+        if (this.edgeRouterInterfaceIp.equals(Constants.INVALID_IP_ADDRESS) ||
+                (null == this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp))) {
+            return;
+        }
+
+        addDftRouteFlow(this.vGMAC,
+                new MacAddress(this.getHostInfoByIpAddr(this.quaggaInterfaceIp).getMac()),
+                new MacAddress(this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getMac()),
+                this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getIngress());
     }
 
     private void processVirtualGatewayMacUpdate(VirtualGatewayMacUpdate update) {
