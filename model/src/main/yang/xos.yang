@@ -77,6 +77,12 @@ module xos {
             description "MAC address of the virtual interface, will be used for ARP proxy and routing
                          identification.";
         }
+
+        leaf managed-host-ingress {
+            type int16;
+            config false; /* This ingress is learned by packetIn. */
+            description "IN_PORT of the virtual interface, will be used for l2 flow forwarding.";
+        }
     }
 
     /* The subnet is used to isolate learning/bridging domain, by default host in different subnet can not
@@ -95,26 +101,9 @@ module xos {
         }
         
         list subnet-host {
+            uses managed-host;
             key "managed-host-ip";
             description "Host on this subnet.";
-
-            leaf managed-host-ip {
-                type inet:ipv4-address;
-                description "IPv4 address of the virtual interface";
-            }
-
-            leaf managed-host-mac {
-                type yang:mac-address;
-                config false; /* This mac address is learned by using arp probe mechanism. */
-                description "MAC address of the virtual interface, will be used for ARP proxy and routing
-                             identification.";
-            }
-
-            leaf managed-host-ingress {
-                type int16;
-                config false; /* This ingress is learned by packetIn. */
-                description "IN_PORT of the virtual interface, will be used for l2 flow forwarding.";
-            }
         }
     }
 
