@@ -91,6 +91,16 @@ public final class ArpPacketBuilder {
     }
 
     /**
+     * Set the arp operation.
+     *
+     * @return  This instance.
+     */
+    public ArpPacketBuilder setAsRequest() {
+        operation = ARP.REQUEST;
+        return this;
+    }
+
+    /**
      * Set the sender protocol address.
      *
      * @param ip4  An {@link Ip4Network} instance which indicates the

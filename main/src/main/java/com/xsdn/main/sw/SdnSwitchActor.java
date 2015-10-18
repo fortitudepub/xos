@@ -22,6 +22,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.set.dl.src.action._case.SetDlSrcActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
@@ -41,7 +42,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestinationBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetTypeBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;import org.opendaylight.yang.gen.v1.urn.opendaylight.openflow.common.action.rev150203.action.grouping.action.choice.set.field._case.SetFieldActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.openflow.common.action.rev150203.action.grouping.action.choice.set.field._case.SetFieldActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.KnownOperation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.arp.rev140528.arp.packet.received.packet.chain.packet.ArpPacket;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.basepacket.rev140528.packet.chain.grp.packet.chain.packet.RawPacket;
@@ -137,6 +139,12 @@ public class SdnSwitchActor extends UntypedActor {
         }
     }
 
+    static public class NotifyDefaultRoute {
+        public NotifyDefaultRoute() {
+
+        }
+    }
+
     static public class ManagedSubnetUpdate {
         private AiManagedSubnet subnet;
         boolean delete;
@@ -205,13 +213,13 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     /**
-     * Note: WZJ, Note: WZJ, Store the host mac and ingress
+     * Note: WZJ, Store the host mac and ingress
      */
     public class HostInfo {
-        private String mac;
+        private MacAddress mac;
         private NodeConnectorRef ingress;
 
-        public HostInfo(String mac, NodeConnectorRef ingress) {
+        public HostInfo(MacAddress mac, NodeConnectorRef ingress) {
             this.mac = mac;
             this.ingress = ingress;
         }
@@ -220,7 +228,7 @@ public class SdnSwitchActor extends UntypedActor {
             return this.ingress;
         }
 
-        public String getMac() {
+        public MacAddress getMac() {
             return this.mac;
         }
     }
@@ -229,7 +237,8 @@ public class SdnSwitchActor extends UntypedActor {
      * Note: WZJ, add l2 forward flows
      */
     private void addL2ForwardFlows(MacAddress destMac, NodeConnectorRef destPort) {
-        if (destMac == null) {
+        if (destMac == null || destPort == null) {
+            LOG.info("Add l2 forward flow error.");
             return;
         }
 
@@ -237,6 +246,7 @@ public class SdnSwitchActor extends UntypedActor {
         EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
                 .setEthernetDestination(new EthernetDestinationBuilder().setAddress(destMac).build());
         MatchBuilder matchBuilder = new MatchBuilder().setEthernetMatch(ethernetMatchBuilder.build());
+        Match match = matchBuilder.build();
 
         // Actions.
         Uri destPortUri = destPort.getValue().firstKeyOf(NodeConnector.class, NodeConnectorKey.class).getId();
@@ -244,30 +254,29 @@ public class SdnSwitchActor extends UntypedActor {
                 .setOrder(0)
                 .setKey(new ActionKey(0))
                 .setAction(new OutputActionCaseBuilder()
-                        .setOutputAction(new OutputActionBuilder()
-                                .setMaxLength(0xffff)
+                        .setOutputAction(new OutputActionBuilder().setMaxLength(0xffff)
                                 .setOutputNodeConnector(destPortUri)
-                                .build())
-                        .build());
-        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match match = matchBuilder.build();
-        List<Action> actions = new ArrayList<Action>();
+                                .build()).build());
+
+        List<Action> actions = new ArrayList<>();
         actions.add(actionBuilder.build());
+
         ApplyActions applyActions = new ApplyActionsBuilder().setAction(actions).build();
+
         InstructionBuilder applyActionsInstructionBuilder = new InstructionBuilder()
                 .setOrder(0)
-                .setInstruction(new ApplyActionsCaseBuilder()
-                        .setApplyActions(applyActions)
-                        .build());
-        InstructionsBuilder instructionsBuilder = new InstructionsBuilder() //
+                .setInstruction(new ApplyActionsCaseBuilder().setApplyActions(applyActions).build());
+
+        InstructionsBuilder instructionsBuilder = new InstructionsBuilder()
                 .setInstruction(ImmutableList.of(applyActionsInstructionBuilder.build()));
 
         this.ofpluginHelper.addFlow(this.dpid, Constants.XOS_L2_FORWARD_FLOW_NAME,
                 Constants.XOS_L2_FORWARD_FLOW_PRIORITY,
-                matchBuilder.build(), instructionsBuilder.build());
+                match , instructionsBuilder.build());
 
         // Action 2: store to our md sal datastore.
-        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_APP_DFT_ARP_FLOW_NAME,
-                matchBuilder.build(), instructionsBuilder.build());
+        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_L2_FORWARD_FLOW_NAME,
+                match, instructionsBuilder.build());
 
         LOG.info("Pushed l2 flow {} to the switch {}", "_XOS_L2_FORWARD", this.dpid);
     }
@@ -403,7 +412,7 @@ public class SdnSwitchActor extends UntypedActor {
         } else {
             this.subnetMap.remove(subnetUpdate.subnet.getKey().getSubnetId());
             this.subnetMap.put(subnetUpdate.subnet.getKey().getSubnetId(), subnetUpdate.subnet);
-            /* Note: WZJ, add or update host info */
+            /* Note: WZJ, delete host info */
             handleHostUpdate(subnetUpdate.subnet.getKey().getSubnetId(), subnetUpdate.subnet, true);
         }
     }
@@ -516,86 +525,93 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     /**
-     * Note: WZJ, handle add/delete host ip address
+     * Note: WZJ, handle add/update/delete host ip address
      */
     private void handleHostUpdate(Short subnetId, AiManagedSubnet subnetInfo, boolean isDel) {
         if (subnetId == null || subnetInfo == null) {
-            LOG.error("HANDLE HOST ADD/DELETE ERROR");
+            LOG.error("Handle host update error.");
             return;
         }
 
-        /* When host ip added, it should send arp probe */
         List<String> addHostsIp = new ArrayList<>();
 
         if (!this.subnetTracer.containsKey(subnetId)) {
             /* Handle add new subnet */
-            List<String> listIp = new ArrayList<>();
-            subnetTracer.put(subnetId, listIp);
+            subnetTracer.put(subnetId, addHostsIp);
 
             /* Get all of hosts in this subnet */
             List<SubnetHost> listHosts = subnetInfo.getSubnetHost();
             if (listHosts == null || listHosts.isEmpty()) {
+                LOG.info("Subnet: " + subnetId + " no need to add hosts.");
                 return;
             }
 
-            /* Add all of hosts */
+            /* If hosts exist, add to database */
             Iterator itHost = listHosts.iterator();
             while(itHost.hasNext()) {
                 SubnetHost hostInfo = (SubnetHost)itHost.next();
                 Ipv4Address hostIp = hostInfo.getManagedHostIp();
-                listIp.add(hostIp.getValue());
                 addHostsIp.add(hostIp.getValue());
-                LOG.info("Subnet_id: " + subnetId + " add host :" + hostIp.getValue());
+                LOG.info("Subnet: " + subnetId + " add host :" + hostIp.getValue());
             }
         }
         else {
             if (isDel) {
                 /* Delete host info from this subnet */
-                if (this.subnetTracer.containsKey(subnetId)) {
-                    List<String> listIp = this.subnetTracer.get(subnetId);
-                    /* Get all of hosts in this subnet */
-                    List<SubnetHost> listHosts = subnetInfo.getSubnetHost();
-                    if (listHosts == null || listHosts.isEmpty()) {
-                        return;
-                    }
+                if (!this.subnetTracer.containsKey(subnetId)) {
+                    LOG.info("Subnet: " + subnetId + " delete host error.");
+                    return;
+                }
 
-                    /* Delete all of hosts */
-                    Iterator itHost = listHosts.iterator();
-                    while(itHost.hasNext()) {
-                        SubnetHost hostInfo = (SubnetHost)itHost.next();
-                        Ipv4Address hostIp = hostInfo.getManagedHostIp();
-                        if (listIp.contains(hostIp.getValue())) {
-                            listIp.remove(hostIp.getValue());
-                            notifyHostTracerToDelHost(hostIp.getValue());
-                            LOG.info("Subnet_id: " + subnetId + " delete host :" + hostIp.getValue());
-                        }
+                /* Get old host list from this subnet */
+                List<String> listIp = this.subnetTracer.get(subnetId);
+                /* Get delete info in this subnet */
+                List<SubnetHost> listHosts = subnetInfo.getSubnetHost();
+                if (listHosts == null || listHosts.isEmpty()) {
+                    LOG.info("Subnet: " + subnetId + " no need to delete hosts.");
+                    return;
+                }
+
+                Iterator itHost = listHosts.iterator();
+                while(itHost.hasNext()) {
+                    SubnetHost hostInfo = (SubnetHost)itHost.next();
+                    Ipv4Address hostIp = hostInfo.getManagedHostIp();
+                    if (listIp.contains(hostIp.getValue())) {
+                        listIp.remove(hostIp.getValue());
+                        notifyHostTracerToDelHost(hostIp.getValue());
+                        LOG.info("Subnet: " + subnetId + " delete host :" + hostIp.getValue());
                     }
                 }
             }
             else {
-                /* Add host info from this subnet */
-                if (this.hostTracer.containsKey(subnetId)) {
-                    List<String> listIp = this.subnetTracer.get(subnetId);
-                    /* Get all of hosts in this subnet */
-                    List<SubnetHost> listHosts = subnetInfo.getSubnetHost();
-                    if (listHosts == null || listHosts.isEmpty()) {
-                        return;
-                    }
+                /* Add/update host info from this subnet */
+                if (!this.subnetTracer.containsKey(subnetId)) {
+                    LOG.info("Subnet: " + subnetId + " add host error.");
+                    return;
+                }
 
-                    /* Add all of hosts */
-                    Iterator itHost = listHosts.iterator();
-                    while(itHost.hasNext()) {
-                        SubnetHost hostInfo = (SubnetHost)itHost.next();
-                        Ipv4Address hostIp = hostInfo.getManagedHostIp();
-                        listIp.add(hostIp.getValue());
-                        addHostsIp.add(hostIp.getValue());
-                        LOG.info("Subnet_id: " + subnetId + " add host :" + hostIp.getValue());
-                    }
+                /* Get old host list from this subnet */
+                List<String> listIp = this.subnetTracer.get(subnetId);
+                /* Get add info from this subnet */
+                List<SubnetHost> listHosts = subnetInfo.getSubnetHost();
+                if (listHosts == null || listHosts.isEmpty()) {
+                    LOG.info("Subnet: " + subnetId + " no need to update hosts.");
+                    return;
+                }
+
+                Iterator itHost = listHosts.iterator();
+                while(itHost.hasNext()) {
+                    SubnetHost hostInfo = (SubnetHost)itHost.next();
+                    Ipv4Address hostIp = hostInfo.getManagedHostIp();
+                    listIp.add(hostIp.getValue());
+                    addHostsIp.add(hostIp.getValue());
+                    LOG.info("Subnet: " + subnetId + " add host :" + hostIp.getValue());
                 }
             }
         }
 
         if (!addHostsIp.isEmpty()) {
+            /* Send arp probe for new hosts */
             sendHostsArpProbe(subnetId, addHostsIp);
         }
 
@@ -612,15 +628,35 @@ public class SdnSwitchActor extends UntypedActor {
 
         if (this.subnetTracer.containsKey(subnetId)) {
             List<String> listHosts = this.subnetTracer.get(subnetId);
-            if (listHosts.contains(pktIn.pkt.getSourceProtocolAddress())) {
-                HostInfo hostInfo = new HostInfo(pktIn.pkt.getSourceHardwareAddress(), pktIn.rawPkt.getIngress());
-                if (this.hostTracer.containsKey(pktIn.pkt.getSourceProtocolAddress())) {
-                    this.hostTracer.remove(pktIn.pkt.getSourceProtocolAddress());
+
+            if (!listHosts.contains(pktIn.pkt.getSourceProtocolAddress())) {
+                LOG.info("host:" + pktIn.pkt.getSourceProtocolAddress() + " not int subnet:" + subnetId);
+                return;
+            }
+
+            MacAddress sMac = new MacAddress(pktIn.pkt.getSourceHardwareAddress());
+            NodeConnectorRef ingress = pktIn.rawPkt.getIngress();
+
+            /* If this host exist before, update it */
+            if (this.hostTracer.containsKey(pktIn.pkt.getSourceProtocolAddress())) {
+                HostInfo oldInfo = this.hostTracer.get(pktIn.pkt.getSourceProtocolAddress());
+                if (oldInfo.getMac().equals(sMac)) {
+                    return;
                 }
-                this.hostTracer.put(pktIn.pkt.getSourceProtocolAddress(), hostInfo);
-                LOG.info("host: " + pktIn.pkt.getSourceProtocolAddress() + " add host information");
-                LOG.info("packet: " + pktIn.toString());
-                addL2ForwardFlows(new MacAddress(pktIn.pkt.getSourceHardwareAddress()), pktIn.rawPkt.getIngress());
+
+                this.hostTracer.remove(pktIn.pkt.getSourceProtocolAddress());
+            }
+
+            HostInfo hostInfo = new HostInfo(sMac, ingress);
+            this.hostTracer.put(pktIn.pkt.getSourceProtocolAddress(), hostInfo);
+            LOG.info("host: " + pktIn.pkt.getSourceProtocolAddress() + " add host information");
+
+            addL2ForwardFlows(sMac, ingress);
+
+            /* If this host is edgeRouter or quagga, notify to add default route flows */
+            if (pktIn.pkt.getSourceProtocolAddress().equals(this.edgeRouterInterfaceIp.getValue()) ||
+                    pktIn.pkt.getSourceProtocolAddress().equals(this.quaggaInterfaceIp.getValue()) ) {
+                this.getContext().self().tell(new NotifyDefaultRoute(), null);
             }
         }
 
@@ -642,7 +678,7 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     /**
-     * Note: WZJ, Get host mac and ingress port by ip address
+     * Note: WZJ, get host mac and ingress port by ip address
      */
     private HostInfo getHostInfoByIpAddr(Ipv4Address ipAddress) {
         if (ipAddress == null) {
@@ -657,65 +693,69 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     /**
-     * Note: WZJ, handle hosts arp probe
+     * Note: WZJ, send arp request for arp probe
      */
     private void sendHostsArpProbe(Short subnetId, List<String> listIp) {
         if (subnetId == null || listIp == null) {
+            LOG.error("Send hosts arp probe error.");
             return;
         }
 
-        if (listIp.isEmpty()) {
-            return;
-        }
-
-        if (!this.subnetMap.containsKey(subnetId)) {
-            LOG.info("Subnet_id: " + subnetId + " has not configure virtual gateway, no need handle.");
+        if (listIp.isEmpty() || !this.subnetMap.containsKey(subnetId)) {
+            LOG.info("Subnet: " + subnetId + " no need to send arp probe.");
             return;
         }
 
         Ipv4Address vIP = this.subnetMap.get(subnetId).getVirtualGateway().getVirtualGatewayIp();
-        MacAddress vMAC = this.vGMAC;
+        if (vIP == null) {
+            LOG.info("Subnet: " + subnetId + " virtual gateway ip is not configured.");
+            return;
+        }
 
-        LOG.info("Subnet_id: " + subnetId + " VIP :" + vIP.getValue());
-        LOG.info("Subnet_id: " + subnetId + " VMAC :" + vMAC.getValue());
+        if (vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
+            LOG.error("Virtual gateway mac is not configured.");
+            return;
+        }
 
+        /* Construct arp request packet and send arp probe */
         for(int i = 0; i < listIp.size(); i++)
         {
             String hostIp = listIp.get(i);
-            /* Construct arp request packet */
-            //TransmitPacketInput arpRequest;
-            LOG.info("host_id: " + hostIp + " send arp request");
+            TransmitPacketInput arpRequest;
 
-
-            /*try {
-                /* Subnet VIP will be used as source SPA, VMAC will be used as ethernet source and SHA.
+            try {
+                /* Subnet VIP will be used as source SPA,
+                   VGMAC will be used as ethernet source and SHA. */
                 Ip4Network spa = new Ip4Network(vIP.getValue());
                 Ip4Network tpa = new Ip4Network(hostIp);
-                // No VLAN in ai deployment.
-                Ethernet ether = new ArpPacketBuilder()
-                        .setAsRequest()
-                        .setSenderProtocolAddress(spa)
-                        .build(new EtherAddress(vMAC.getValue()),
-                               EtherAddress.BROADCAST,
-                               tpa);
 
+                /* ARP packet build */
+                Ethernet ether = new ArpPacketBuilder().setAsRequest()
+                    .setSenderProtocolAddress(spa)
+                        .build(new EtherAddress(vGMAC.getValue()), EtherAddress.BROADCAST, tpa);
 
+                String swId = OFutils.BuildNodeIdUriByDpid(this.dpid);
+                NodeKey swNodeKey = new NodeKey(new NodeId(swId));
+                InstanceIdentifier<Node> swNode = InstanceIdentifier.builder(Nodes.class)
+                        .child(Node.class, swNodeKey).build();
 
-                NodeKey nodeKey = new NodeKey(new NodeId(OFutils.BuildNodeIdUriByDpid(this.dpid)));
-                InstanceIdentifier<Node> node = InstanceIdentifier.builder(Nodes.class)
-                                                .child(Node.class, nodeKey).build();
+                String outPutAll = OFutils.BuildNodeIdUriForOutPutAll(this.dpid);
+                NodeKey portNodeKey = new NodeKey(new NodeId(outPutAll));
+                InstanceIdentifier<NodeConnector> portNode = InstanceIdentifier.builder(Nodes.class)
+                        .child(Node.class, portNodeKey)
+                        .child(NodeConnector.class, new NodeConnectorKey(new NodeConnectorId(outPutAll))).build();
 
                 arpRequest = new TransmitPacketInputBuilder()
                              .setPayload(ether.serialize())
-                             .setNode(new NodeRef(node))
-                             .setEgress(OutputPortValues.ALL)
+                             .setNode(new NodeRef(swNode))
+                             .setEgress(new NodeConnectorRef(portNode))
                              .build();
             } catch (Exception e) {
                 LOG.error("Failed to build arp request for host: " + hostIp);
                 return;
-            }*/
+            }
 
-            //packetProcessingService.transmitPacket(arpRequest);
+            packetProcessingService.transmitPacket(arpRequest);
         }
 
         return;
@@ -888,6 +928,8 @@ public class SdnSwitchActor extends UntypedActor {
             processAppStatusUpdate(((AppStatusUpdate) (message)).appStatus);
         } else if (message instanceof ProbeArpOnce) {
             processArpProbe();
+        } else if (message instanceof NotifyDefaultRoute) {
+            LOG.info("Notify add  default route");
         } else if (message instanceof ManagedSubnetUpdate) {
             processSubnetUpdate((ManagedSubnetUpdate) message);
         } else if (message instanceof ArpPacketIn) {

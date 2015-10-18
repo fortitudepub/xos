@@ -17,5 +17,5 @@ public class Constants {
     public static int XOS_APP_DFT_ROUTE_FLOW_PRIORITY=30000;
 
     public static String XOS_L2_FORWARD_FLOW_NAME="XOS_L2_FORWARD_FLOW_NAME";
-    public static int XOS_L2_FORWARD_FLOW_PRIORITY=65535;
+    public static int XOS_L2_FORWARD_FLOW_PRIORITY=20000;
 }

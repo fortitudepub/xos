@@ -1,5 +1,7 @@
 package com.xsdn.main.util;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
+
 /**
  * Created by fortitude on 15-10-2.
  */
@@ -11,5 +13,9 @@ public class OFutils {
 
     public static String BuildNodeIdUriByDpid(String dpid) {
         return (OPENFLOW_DOMAIN + Long.parseLong(dpid, 16));
+    }
+
+    public static String BuildNodeIdUriForOutPutAll(String dpid) {
+        return (OPENFLOW_DOMAIN + Long.parseLong(dpid, 16) + ":" + OutputPortValues.ALL.toString());
     }
 }
