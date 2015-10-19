@@ -236,7 +236,7 @@ public class SdnSwitchActor extends UntypedActor {
     /**
      * Note: WZJ, add l2 forward flows
      */
-    private void addL2ForwardFlows(MacAddress destMac, NodeConnectorRef destPort) {
+    private void addL2ForwardFlows(String ipAddr, MacAddress destMac, NodeConnectorRef destPort) {
         if (destMac == null || destPort == null) {
             LOG.info("Add l2 forward flow error.");
             return;
@@ -275,7 +275,7 @@ public class SdnSwitchActor extends UntypedActor {
                 match , instructionsBuilder.build());
 
         // Action 2: store to our md sal datastore.
-        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_L2_FORWARD_FLOW_NAME,
+        this.mdsalHelper.storeAppFlow(this.nodeId, Constants.XOS_L2_FORWARD_FLOW_NAME + ipAddr,
                 match, instructionsBuilder.build());
 
         LOG.info("Pushed l2 flow {} to the switch {}", "_XOS_L2_FORWARD", this.dpid);
@@ -421,11 +421,6 @@ public class SdnSwitchActor extends UntypedActor {
         String dip = pktIn.pkt.getDestinationProtocolAddress();
         Ipv4Address dIPv4 = new Ipv4Address(dip);
         boolean isVGWARP = false;
-        Short subnetId = null;
-
-        if (this.vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
-            LOG.error("Virtual Gateway MAC address is not configured");
-        }
 
         // Locate whether this arp request is for
         Iterator<Entry<Short, AiManagedSubnet>> it = this.subnetMap.entrySet().iterator();
@@ -435,22 +430,12 @@ public class SdnSwitchActor extends UntypedActor {
             if ((subnet.getVirtualGateway() != null) && (subnet.getVirtualGateway().getVirtualGatewayIp() != null)
                     && (subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4))) {
                 isVGWARP = true;
-                subnetId = entry.getKey();
                 break;
             }
         }
 
         if (false == isVGWARP) {
             return false;
-        }
-
-        if (pktIn.pkt.getOperation() != KnownOperation.Request) {
-            /* Note: WZJ, if arp replay, should handle by us */
-            if (pktIn.pkt.getOperation() == KnownOperation.Reply) {
-                notifyHostTracerToAddHost(subnetId, pktIn);
-            }
-
-            return true; // It should be handled by us, but it's not request.
         }
 
         TransmitPacketInput arpReply;
@@ -486,12 +471,100 @@ public class SdnSwitchActor extends UntypedActor {
         return true;
     }
 
-    private void processArp(ArpPacketIn pktIn) {
-        boolean vgwHandled = false;
-        // Handle arp request for vmac
-        vgwHandled = processArpReqForVGW(pktIn);
-        if (vgwHandled) {
+    /**
+     * Note: WZJ, process arp proxy for hosts
+     */
+    private void processArpReqForHosts(ArpPacketIn pktIn) {
+        String dip = pktIn.pkt.getDestinationProtocolAddress();
+        Ipv4Address dIPv4 = new Ipv4Address(dip);
+
+        if (!this.hostTracer.containsKey(dip)) {
+            LOG.info("Receive host arp request, but destination host is unknow.");
             return;
+        }
+
+        LOG.info("Receive host arp request, destination host is found.");
+
+        TransmitPacketInput arpReply;
+        MacAddress destMac = this.hostTracer.get(dip).getMac();
+
+        try {
+            /* Construct ARP Reply for host */
+            /* Virtual GW IP will be used as SPA, Virtual GW MAC will be ethernet source and SHA. */
+            Ip4Network spa = new Ip4Network(dIPv4.getValue());
+            Ip4Network tpa = new Ip4Network(pktIn.pkt.getSourceProtocolAddress());
+            /* No VLAN in ai deployment. */
+            Ethernet ether = new ArpPacketBuilder().setAsReply()
+                    .setSenderProtocolAddress(spa)
+                    .build(new EtherAddress(destMac.getValue()),
+                           new EtherAddress(pktIn.pkt.getSourceHardwareAddress()),
+                           tpa);
+
+            InstanceIdentifier<Node> node = pktIn.rawPkt.getIngress().getValue().firstIdentifierOf(Node.class);
+
+            arpReply = new TransmitPacketInputBuilder()
+                    .setPayload(ether.serialize())
+                    .setNode(new NodeRef(node))
+                    .setEgress(pktIn.rawPkt.getIngress())
+                    .build();
+        } catch (Exception e) {
+            LOG.error("Failed to build arp reply for host " + dIPv4.getValue() +
+                    "with request from " + pktIn.pkt.getSourceProtocolAddress());
+            return;
+        }
+
+        packetProcessingService.transmitPacket(arpReply);
+
+        return;
+    }
+
+    private void processArp(ArpPacketIn pktIn) {
+        if (vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
+            LOG.error("Virtual Gateway MAC address is not configured, no need to handle arp packet");
+            return;
+        }
+
+        if (pktIn.pkt.getOperation() == KnownOperation.Request) {
+            // Handle arp request for vmac
+            boolean vgwHandled = false;
+            vgwHandled = processArpReqForVGW(pktIn);
+            if (vgwHandled) {
+                return;
+            }
+
+            // Handle arp request for hosts
+            processArpReqForHosts(pktIn);
+
+            return;
+        }
+
+        /* Note: WZJ, if arp replay, should handle by us */
+        if (pktIn.pkt.getOperation() == KnownOperation.Reply) {
+            if (!this.vGMAC.getValue().equals(pktIn.pkt.getDestinationHardwareAddress())) {
+                /* Not handle arp reply which macda is not vGMAC */
+                return;
+            }
+
+            Ipv4Address dIPv4 = new Ipv4Address(pktIn.pkt.getDestinationProtocolAddress());
+            Short subnetId = null;
+
+            Iterator<Entry<Short, AiManagedSubnet>> it = this.subnetMap.entrySet().iterator();
+            while (it.hasNext()) {
+                Entry<Short, AiManagedSubnet> entry = it.next();
+                AiManagedSubnet subnet = entry.getValue();
+                if (subnet.getVirtualGateway() != null &&
+                    subnet.getVirtualGateway().getVirtualGatewayIp().equals(dIPv4)) {
+                    subnetId = entry.getKey();
+                    break;
+                }
+            }
+
+            if (subnetId == null) {
+                /* Not handle arp reply which destip is not vGIP */
+                return;
+            }
+
+            notifyHostTracerToAddHost(subnetId, pktIn);
         }
 
         return;
@@ -633,28 +706,30 @@ public class SdnSwitchActor extends UntypedActor {
             }
 
             MacAddress sMac = new MacAddress(pktIn.pkt.getSourceHardwareAddress());
+            String sIp =  pktIn.pkt.getSourceProtocolAddress();
             NodeConnectorRef ingress = pktIn.rawPkt.getIngress();
 
             /* If this host exist before, update it */
-            if (this.hostTracer.containsKey(pktIn.pkt.getSourceProtocolAddress())) {
-                HostInfo oldInfo = this.hostTracer.get(pktIn.pkt.getSourceProtocolAddress());
+            if (this.hostTracer.containsKey(sIp)) {
+                HostInfo oldInfo = this.hostTracer.get(sIp);
                 if (oldInfo.getMac().equals(sMac)) {
                     return;
                 }
 
-                this.hostTracer.remove(pktIn.pkt.getSourceProtocolAddress());
+                this.hostTracer.remove(sIp);
             }
 
             HostInfo hostInfo = new HostInfo(sMac, ingress);
-            this.hostTracer.put(pktIn.pkt.getSourceProtocolAddress(), hostInfo);
-            LOG.info("host: " + pktIn.pkt.getSourceProtocolAddress() + " add host information");
+            this.hostTracer.put(sIp, hostInfo);
+            LOG.info("host: " + sIp + " add host information");
 
-            addL2ForwardFlows(sMac, ingress);
+            addL2ForwardFlows(sIp, sMac, ingress);
 
             /* If this host is edgeRouter or quagga, notify to add default route flows */
-            if (pktIn.pkt.getSourceProtocolAddress().equals(this.edgeRouterInterfaceIp.getValue()) ||
-                    pktIn.pkt.getSourceProtocolAddress().equals(this.quaggaInterfaceIp.getValue()) ) {
-                this.getContext().self().tell(new NotifyDefaultRoute(), null);
+            if (sIp.equals(this.edgeRouterInterfaceIp.getValue()) ||
+                sIp.equals(this.quaggaInterfaceIp.getValue()) ) {
+                LOG.info("Tell route module add default route");
+                this.self().tell(new NotifyDefaultRoute(), null);
             }
         }
 
