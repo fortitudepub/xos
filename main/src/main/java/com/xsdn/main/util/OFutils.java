@@ -10,6 +10,9 @@ public class OFutils {
     public static short FLOW_ADD = 1;
     public static short FLOW_DELETE = 2;
     public static short FLOW_UPDATE= 3;
+    public static short GROUP_ADD = 1;
+    public static short GROUP_DELETE = 2;
+    public static short GROUP_UPDATE= 3;
 
     public static String BuildNodeIdUriByDpid(String dpid) {
         return (OPENFLOW_DOMAIN + Long.parseLong(dpid, 16));

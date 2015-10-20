@@ -34,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instru
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.SalGroupService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.*;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnectorKey;
@@ -52,6 +53,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.Pa
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.UserFlow;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.UserGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.xos.ai.active.passive.switchset.AiManagedSubnet;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.managed.subnet.SubnetHost;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -73,6 +75,7 @@ public class SdnSwitchActor extends UntypedActor {
     private static final Logger LOG = LoggerFactory.getLogger(SdnSwitchActor.class);
     private static final HashMap<Short, AiManagedSubnet> subnetMap = new HashMap(50); // TODO: 50 is a arbitrary number now.
     private PacketProcessingService packetProcessingService = null;
+    private SalGroupService salGroupService = null;
     private SalFlowService salFlowService = null;
     private DataBroker dataService = null;
     private String dpid;
@@ -92,11 +95,13 @@ public class SdnSwitchActor extends UntypedActor {
 
     private SdnSwitchActor(final PacketProcessingService packetProcessingService,
                            final SalFlowService salFlowService,
+                           final SalGroupService salGroupService,
                            final DataBroker dataService) {
         this.packetProcessingService = Preconditions.checkNotNull(packetProcessingService);
+        this.salGroupService = salGroupService;
         this.salFlowService = salFlowService;
         this.dataService = dataService;
-        this.ofpluginHelper = new OFpluginHelper(salFlowService);
+        this.ofpluginHelper = new OFpluginHelper(salFlowService, salGroupService);
         this.mdsalHelper = new MdsalHelper(dataService);
     }
 
@@ -171,10 +176,26 @@ public class SdnSwitchActor extends UntypedActor {
     static public class UserFlowOp {
         private short op;
         private UserFlow userFlow;
+        // iid is not used currently since we will construct it to inventory iid.
+        private InstanceIdentifier<UserFlow> iid;
 
-        public UserFlowOp(short op, UserFlow userFlow) {
+        public UserFlowOp(short op, UserFlow userFlow, InstanceIdentifier<UserFlow> iid) {
             this.op = op;
             this.userFlow = userFlow;
+            this.iid = iid;
+        }
+    }
+
+    static public class UserGroupOp {
+        private short op;
+        private UserGroup userGroup;
+        // iid is not used currently since we will construct it to inventory iid.
+        private InstanceIdentifier<UserGroup> iid;
+
+        public UserGroupOp(short op, UserGroup userGroup, InstanceIdentifier<UserGroup> iid) {
+            this.op = op;
+            this.userGroup = userGroup;
+            this.iid = iid;
         }
     }
 
@@ -595,6 +616,18 @@ public class SdnSwitchActor extends UntypedActor {
         }
     }
 
+    private void processUserGroupOp(UserGroupOp userGroupOp) {
+        if (userGroupOp.op == OFutils.GROUP_ADD) {
+            UserGroup userGroup = userGroupOp.userGroup;
+
+            this.ofpluginHelper.addGroup(this.dpid, userGroup);
+        } else if (userGroupOp.op == OFutils.GROUP_DELETE) {
+            UserGroup userGroup = userGroupOp.userGroup;
+
+            this.ofpluginHelper.deleteGroup(this.dpid, userGroup);
+        }
+    }
+
     /**
      * Note: WZJ, handle add/update/delete host ip address
      */
@@ -1009,6 +1042,8 @@ public class SdnSwitchActor extends UntypedActor {
             processArp((ArpPacketIn) message);
         } else if (message instanceof UserFlowOp) {
             processUserFlowOp((UserFlowOp) message);
+        } else if (message instanceof UserGroupOp) {
+            processUserGroupOp((UserGroupOp) message);
         } else if (message instanceof VirtualGatewayMacUpdate) {
             processVirtualGatewayMacUpdate((VirtualGatewayMacUpdate) message);
         } else if (message instanceof EdgeRouterInterfaceIpUpdate) {
@@ -1022,26 +1057,30 @@ public class SdnSwitchActor extends UntypedActor {
 
     public static Props props(final PacketProcessingService packetProcessingService,
                               final SalFlowService salFlowService,
+                              final SalGroupService salGroupService,
                               final DataBroker dataService) {
-        return Props.create(new SdnSwitchActorCreator(packetProcessingService, salFlowService, dataService));
+        return Props.create(new SdnSwitchActorCreator(packetProcessingService, salFlowService, salGroupService, dataService));
     }
 
     private static final class SdnSwitchActorCreator implements Creator<SdnSwitchActor> {
         private final PacketProcessingService packetProcessingService;
         private final SalFlowService salFlowService;
+        private final SalGroupService salGroupService;
         private final DataBroker dataService;
 
         SdnSwitchActorCreator(final PacketProcessingService packetProcessingService,
                               final SalFlowService salFlowService,
+                              final SalGroupService salGroupService,
                               final DataBroker dataService) {
             this.packetProcessingService = Preconditions.checkNotNull(packetProcessingService);
             this.salFlowService = Preconditions.checkNotNull(salFlowService);
+            this.salGroupService = Preconditions.checkNotNull(salGroupService);
             this.dataService = Preconditions.checkNotNull(dataService);
         }
 
         @Override
         public SdnSwitchActor create() {
-            return new SdnSwitchActor(packetProcessingService, salFlowService, dataService);
+            return new SdnSwitchActor(packetProcessingService, salFlowService, salGroupService, dataService);
         }
     }
 }

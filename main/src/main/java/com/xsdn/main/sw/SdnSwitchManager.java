@@ -10,6 +10,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.SalGroupService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
@@ -53,9 +54,10 @@ public class SdnSwitchManager {
     }
 
     public void init(ActorSystem system, PacketProcessingService packetProcessingService,
-                     SalFlowService salFlowService, DataBroker dataService) {
-        this.westActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService, dataService));
-        this.eastActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService, dataService));
+                     SalFlowService salFlowService, SalGroupService salGroupService,
+                     DataBroker dataService) {
+        this.westActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService, salGroupService, dataService));
+        this.eastActorRef = system.actorOf(SdnSwitchActor.props(packetProcessingService, salFlowService, salGroupService, dataService));
 
         /* Send periodical arp probe message to trigger arp probe and mac learning.
          * TODO: let 50ms to be configurable. */

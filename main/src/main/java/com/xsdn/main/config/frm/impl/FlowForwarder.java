@@ -50,10 +50,10 @@ public class FlowForwarder extends AbstractListeningCommiter<UserFlow> {
                 .<East>child(East.class)
                 .<EastSwitch>child(EastSwitch.class);
 
-        registrationListener(db);
+        registerListener(db);
     }
 
-    private void registrationListener(final DataBroker db) {
+    private void registerListener(final DataBroker db) {
         InstanceIdentifier<UserFlow> westSwitchFlowIID = InstanceIdentifier.create(Xos.class)
                 .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
                 .<West>child(West.class)
@@ -123,10 +123,10 @@ public class FlowForwarder extends AbstractListeningCommiter<UserFlow> {
     public void remove(final InstanceIdentifier<UserFlow> identifier, final UserFlow removeDataObj) {
         if (this.westSwitchIID.contains(identifier)) {
             SdnSwitchManager.getSdnSwitchManager()
-                    .getWestSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_DELETE, removeDataObj), null);
+                    .getWestSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_DELETE, removeDataObj, identifier), null);
         } else if (this.eastSwitchIID.contains(identifier)) {
             SdnSwitchManager.getSdnSwitchManager()
-                    .getEastSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_DELETE, removeDataObj), null);
+                    .getEastSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_DELETE, removeDataObj, identifier), null);
         }
     }
 
@@ -152,10 +152,10 @@ public class FlowForwarder extends AbstractListeningCommiter<UserFlow> {
     public void add(final InstanceIdentifier<UserFlow> identifier, final UserFlow addDataObj) {
         if (this.westSwitchIID.contains(identifier)) {
             SdnSwitchManager.getSdnSwitchManager()
-                    .getWestSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_ADD, addDataObj), null);
+                    .getWestSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_ADD, addDataObj, identifier), null);
         } else if (this.eastSwitchIID.contains(identifier)) {
             SdnSwitchManager.getSdnSwitchManager()
-                    .getEastSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_ADD, addDataObj), null);
+                    .getEastSdnSwitchActor().tell(new SdnSwitchActor.UserFlowOp(OFutils.FLOW_ADD, addDataObj, identifier), null);
         }
     }
 }

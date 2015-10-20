@@ -137,14 +137,20 @@ module xos {
             key "id";
 
             leaf id {
-                type flow-id;
+                type flow:flow-id;
             }
 
             uses flow:flow;
         }
 
-        container user-group {
-            uses group:groups;
+        list user-group {
+            key "id";
+
+            leaf id {
+                type group:group-id;
+            }
+
+            uses group:group;
         }
 
         list app-flow {

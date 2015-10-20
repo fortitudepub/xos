@@ -18,8 +18,8 @@ import com.xsdn.main.config.frm.FlowNodeObserver;
 import com.xsdn.main.config.frm.ForwardingRulesCommiter;
 import com.xsdn.main.config.frm.ForwardingRulesManager;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.types.rev131018.groups.Group;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.UserFlow;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.UserGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public class ForwardingRulesManagerImpl implements ForwardingRulesManager {
     private final DataBroker dataService;
 
     private ForwardingRulesCommiter<UserFlow> flowListener;
-    private ForwardingRulesCommiter<Group> groupListener;
+    private ForwardingRulesCommiter<UserGroup> groupListener;
     private FlowNodeObserver nodeListener;
 
     public ForwardingRulesManagerImpl(final DataBroker dataBroker) {
