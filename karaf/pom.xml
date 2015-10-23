@@ -42,6 +42,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
       <scope>runtime</scope>
     </dependency>
 
+    <!-- ODL Resources needed for karaf -->
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>opendaylight-karaf-resources</artifactId>
+      <version>${karaf.resources.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>xos-model</artifactId>
@@ -198,6 +205,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
               </artifactItems>
             </configuration>
           </execution>
+          -->
           <execution>
             <id>unpack-karaf-resources</id>
             <goals>
@@ -213,7 +221,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
               <ignorePermissions>false</ignorePermissions>
             </configuration>
           </execution>
-          -->
           <execution>
             <id>copy-dependencies</id>
             <phase>prepare-package</phase>
