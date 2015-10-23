@@ -23,6 +23,11 @@ import scala.concurrent.duration.FiniteDuration;
 // 2nd: active controller and backup controller
 // for the later, we listen to the mdsal role change event and act accordingly.
 
+// ZDY_NOTE: ODL is not fixing this bug (https://bugs.opendaylight.org/show_bug.cgi?id=4105)
+//https://git.opendaylight.org/gerrit/#/q/branch:+stable/lithium+message:4105
+// Later we should migrate to this approach, we can not accept the hard coded url here.
+// @2015.10.22
+
 /**
  * This is a implementation of a Role Change Listener which is an actor, which registers itself to the ClusterRoleChangeNotifier
  * The Role Change listener receives a SetNotifiers message with the notifiers to register itself with.

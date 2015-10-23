@@ -18,7 +18,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
 
   <groupId>com.xsdn</groupId>
   <artifactId>xos-main</artifactId>
-  <version>1.0-SNAPSHOT</version>
   <packaging>bundle</packaging>
 
   <properties>
@@ -28,10 +27,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <!-- scala and akka version should be same with ones defined in odl-akka-*. -->
     <scala.version>2.10</scala.version>
     <akka.version>2.3.10</akka.version>
-    <l2switch.version>0.2.0-Lithium</l2switch.version>
-    <adsal.version>0.9.0-Lithium</adsal.version>
     <jackson.version>2.3.2</jackson.version>
-    <openflowplugin.version>0.1.0-Lithium</openflowplugin.version>
   </properties>
 
   <dependencies>
@@ -68,18 +64,16 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
-      <version>${adsal.version}</version>
+      <version>${sal.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>openflowplugin-api</artifactId>
-      <version>${openflowplugin.version}</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.openflowplugin.model</groupId>
       <artifactId>model-flow-service</artifactId>
-      <version>${openflowplugin.version}</version>
     </dependency>
 
     <!-- some of l2switch components -->
@@ -187,7 +181,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
           <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>yang-jmx-generator-plugin</artifactId>
-            <version>${config.version}</version>
+            <version>${controller.config.version}</version>
           </dependency>
         </dependencies>
         <executions>

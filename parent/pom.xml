@@ -6,7 +6,8 @@
     <parent>
         <groupId>org.opendaylight.odlparent</groupId>
         <artifactId>odlparent</artifactId>
-        <version>1.5.0-Lithium</version>
+        <!-- 2015.10.23 update to 1.5.3 lithium from 1.5.0 -->
+        <version>1.5.3-SNAPSHOT</version>
         <relativePath/>
     </parent>
 
@@ -19,15 +20,35 @@
         <codeGeneratorPath>src/main/yang-gen-code</codeGeneratorPath>
         <configCodeGeneratorPath>src/main/yang-gen-config</configCodeGeneratorPath>
         <nexus_proxy>http://nexus.opendaylight.org/content</nexus_proxy>
-        <mdsal.version>1.2.0-Lithium</mdsal.version>
-        <yangtools.version>0.7.0-Lithium</yangtools.version>
-        <jung2.version>2.0.1</jung2.version>
-        <config.version>0.3.0-Lithium</config.version>
-        <openflow.plugin.version>0.1.0-Lithium</openflow.plugin.version>
-        <dlux.version>0.2.0-Lithium</dlux.version>
         <config.configfile.directory>etc/opendaylight/karaf</config.configfile.directory>
+        <karaf.version>3.0.1</karaf.version>
+        <!-- ZDY_NOTE: the following version property should be consistent with odl parent used above
+             we should keep up with lithium mainline -->
+        <!-- YANG tools artifacts -->
+        <yangtools.version>0.7.2-Lithium-SR2</yangtools.version>
+        <!-- Controller artifacts -->
+        <controller.config.version>0.3.2-Lithium-SR2</controller.config.version>
+        <controller.framework.version>0.6.2-Lithium-SR2</controller.framework.version>
+        <controller.checkstyle.version>0.1.2-Lithium-SR2</controller.checkstyle.version>
+        <sal.version>0.9.2-Lithium-SR2</sal.version>
+        <controller.mdsal.version>1.2.2-Lithium-SR2</controller.mdsal.version>
+        <openflowplugin.version>0.1.2-Lithium-SR2</openflowplugin.version>
+        <dlux.version>0.2.2-Lithium-SR2</dlux.version>
+        <l2switch.version>0.2.2-Lithium-SR2</l2switch.version>
+        <karaf.resources.version>1.5.2-Lithium-SR2</karaf.resources.version>
     </properties>
 
+    <!-- ZDY_NOTE: dependencyManagement is quite import for us to maintain a single place
+     where version will be propogated to subprojects.
+
+     So we put most of odl package here in order to update to new odl version easily.
+
+     It's also better to clean up pluginManagement to make subproject does need to track
+     plugin versions, however this works seems quite big, we keep use the the property defined
+     in this parent.
+
+     If the feature development is finished, we can optimize the pluginManagement too.
+     -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -40,22 +61,34 @@
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
                 <artifactId>config-artifacts</artifactId>
-                <version>${config.version}</version>
+                <version>${controller.config.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
                 <artifactId>mdsal-artifacts</artifactId>
-                <version>${mdsal.version}</version>
+                <version>${controller.mdsal.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
             <dependency>
-                <groupId>org.opendaylight.openflowplugin.model</groupId>
-                <artifactId>model-flow-service</artifactId>
-                <version>${openflow.plugin.version}</version>
+                <groupId>org.opendaylight.openflowplugin</groupId>
+                <artifactId>openflowplugin-artifacts</artifactId>
+                <version>${openflowplugin.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
+            <!-- lithium does not provide l2switch artifcat, odl mainline provide it
+                 sadly we have to maintain the version in our xos-main project.
+            <dependency>
+                <groupId>org.opendaylight.l2switch</groupId>
+                <artifactId>l2switch-artifacts</artifactId>
+                <version>${l2switch.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            -->
         </dependencies>
     </dependencyManagement>
 
@@ -89,7 +122,7 @@
                         <dependency>
                             <groupId>org.opendaylight.controller</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>0.1.0-Lithium</version>
+                            <version>${controller.checkstyle.version}</version>
                         </dependency>
                     </dependencies>
                     <executions>

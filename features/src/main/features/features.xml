@@ -10,30 +10,30 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
 <features name="odl-xos-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
-  <repository>mvn:org.opendaylight.yangtools/features-yangtools/${yangtools.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.controller/features-adsal/${adsal.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.controller/features-mdsal/${mdsal.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.controller/features-restconf/${mdsal.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${openflow.plugin.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-adsal/${sal.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-mdsal/${controller.mdsal.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-restconf/${controller.mdsal.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${openflowplugin.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.l2switch/features-l2switch/${l2switch.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.dlux/features-dlux/${dlux.version}/xml/features</repository>
   <feature name='xsdn-xos-model' version='${project.version}' description='XSDN :: xos :: model'>
-    <feature version='${yangtools.version}'>odl-yangtools-models</feature>
-    <!-- ZDY_NOTE: we use nsf model to build our own model -->
-    <feature version="${openflow.plugin.version}">odl-openflowplugin-nsf-model</feature>
+    <!-- ZDY_NOTE: we use nsf model to build our own model, and it will import yangtools-model automatically. -->
+    <feature version="${openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
     <bundle>mvn:com.xsdn/xos-model/${project.version}</bundle>
   </feature>
   <feature name='xsdn-xos' version='${project.version}' description='XSDN :: xos'>
     <!-- ZDY_NOTE: when we add new dependency feature here, must add the dependency to pom.xml of xos-features,otherwise
       the distribution karaf will does not have the repository copied to the karaf/system directory,
        also we should add the corresponding feature repository on top of this xml. -->
-    <feature version="${adsal.version}">odl-adsal-core</feature>
-    <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
+    <feature version="${sal.version}">odl-adsal-core</feature>
+    <feature version='${controller.mdsal.version}'>odl-mdsal-broker</feature>
     <!-- ZDY: surely we want to support clustering, enable clustering default -->
-    <feature version='${mdsal.version}'>odl-mdsal-clustering</feature>
+    <feature version='${controller.mdsal.version}'>odl-mdsal-clustering</feature>
     <!-- ZDY: only depend on sourth-bound feature because we want manage flow by ourself instead of
-         flowrulemanager of openflowplugin. -->
-    <feature version="${openflow.plugin.version}">odl-openflowplugin-southbound</feature>
+         flowrulemanager of openflowplugin.
+          it will be pulled by l2switch-packethandler.
+    <feature version="${openflowplugin.version}">odl-openflowplugin-southbound</feature>
+    -->
     <!-- ZDY: add odl-l2switch-packethandler, since we do not want to bother reinvent the packet decoding logic
       NOTE: we should carefully introduce other l2switch features since the functionality provided by it may
       conflict with us. -->
@@ -48,7 +48,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   </feature>
   <feature name='xsdn-xos-rest' version='${project.version}' description='XSDN :: xos :: REST'>
     <feature version="${project.version}">xsdn-xos</feature>
-    <feature version="${mdsal.version}">odl-restconf</feature>
+    <feature version="${controller.mdsal.version}">odl-restconf</feature>
   </feature>
   <feature name='xsdn-xos-ui' version='${project.version}' description='XSDN :: xos :: UI'>
     <feature version="${project.version}">xsdn-xos-rest</feature>
