@@ -18,4 +18,8 @@ public class Constants {
 
     public static String XOS_L2_FORWARD_FLOW_NAME="XOS_L2_FORWARD_FLOW_NAME";
     public static int XOS_L2_FORWARD_FLOW_PRIORITY=20000;
+
+    // For clustering entity owner ship detect, we use this mechanism to detect which
+    // application is master.
+    public static String XOS_HA_ENTITY_TYPE = "XOS_HA_ENTITY";
 }

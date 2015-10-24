@@ -7,10 +7,12 @@ import com.typesafe.config.ConfigFactory;
 import com.xsdn.main.config.ConfigDataListener;
 import com.xsdn.main.config.frm.impl.ForwardingRulesManagerImpl;
 import com.xsdn.main.ha.MdsalRoleChangeListener;
+import com.xsdn.main.ha.NewMdsalRoleChangeListener;
 import com.xsdn.main.packet.ArpPacketHandler;
 import com.xsdn.main.rpc.XosRpcProvider;
 import com.xsdn.main.sw.SdnSwitchManager;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipService;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
@@ -22,6 +24,7 @@ import org.osgi.framework.BundleReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -32,6 +35,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
     private ArpPacketHandler arpPacketHandler;
     private Registration arpPacketInListener = null;
     private ConfigDataListener configDataListener = null;
+    private NewMdsalRoleChangeListener roleChangeListener = null;
 
     public XosModule(org.opendaylight.controller.config.api.ModuleIdentifier identifier, org.opendaylight.controller.config.api.DependencyResolver dependencyResolver) {
         super(identifier, dependencyResolver);
@@ -56,6 +60,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         SalGroupService salGroupService = rpcRegistryDependency.getRpcService (SalGroupService.class);
         PacketProcessingService packetProcessingService =
                 rpcRegistryDependency.getRpcService(PacketProcessingService.class);
+        EntityOwnershipService entityOwnershipService = getEntityOwnershipServiceDependency();
 
         // Initialize actor system.
         BundleContext bundleContext =
@@ -70,7 +75,9 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         SdnSwitchManager.getSdnSwitchManager().init(system, packetProcessingService, salFlowService, salGroupService, dataService);
 
         // Create controller active/backup listener actor.
-        ActorRef listenerActor = system.actorOf(MdsalRoleChangeListener.getProps("member-1"));
+        // Not used now, we switch to use the new entityOwnershipService.
+        // ActorRef listenerActor = system.actorOf(MdsalRoleChangeListener.getProps("member-1"));
+        roleChangeListener = new NewMdsalRoleChangeListener(entityOwnershipService, getHaEntityName());
 
         // Register xos rpc.
         getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());

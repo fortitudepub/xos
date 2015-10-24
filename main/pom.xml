@@ -23,7 +23,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   <properties>
     <salGeneratorPath>src/main/yang-gen-sal</salGeneratorPath>
     <jmxGeneratorPath>src/main/yang-gen-config</jmxGeneratorPath>
-    <config.file>src/main/config/default-config.xml</config.file>
+    <config.file>src/main/config/70-xos-app.xml</config.file>
     <!-- scala and akka version should be same with ones defined in odl-akka-*. -->
     <scala.version>2.10</scala.version>
     <akka.version>2.3.10</akka.version>

@@ -61,6 +61,15 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
             </type>
             <name>binding-osgi-broker</name>
           </binding-aware-broker>
+          <entity-ownership-service>
+            <type xmlns:ns="urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:entity-ownership-service">
+              ns:entity-ownership-service
+            </type>
+            <name>entity-ownership-service</name>
+          </entity-ownership-service>
+
+          <ha-entity-name>xos-app-inst1</ha-entity-name>
+
 		</module>
       </modules>
     </data>

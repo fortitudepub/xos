@@ -5,6 +5,7 @@ module xos-main {
 
     import config { prefix config; revision-date 2013-04-05; }
     import opendaylight-md-sal-binding { prefix md-sal-binding; revision-date 2013-10-28;}
+    import opendaylight-entity-ownership-service { prefix entity-ownership-service; }
 
     description
         "Service definition for xos project";
@@ -27,7 +28,7 @@ module xos-main {
             container data-broker {
                 uses config:service-ref {
                     refine type {
-                        mandatory false;
+                        mandatory true;
                         config:required-identity md-sal-binding:binding-async-data-broker;
                     }
                 }
@@ -58,6 +59,19 @@ module xos-main {
                         config:required-identity md-sal-binding:binding-broker-osgi-registry;
                     }
                 }
+            }
+
+            container entity-ownership-service {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity entity-ownership-service:entity-ownership-service;
+                    }
+                }
+            }
+
+            leaf ha-entity-name {
+                type string;
             }
         }
     }

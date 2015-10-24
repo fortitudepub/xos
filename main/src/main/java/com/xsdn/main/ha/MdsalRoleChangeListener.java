@@ -18,6 +18,10 @@ import org.opendaylight.controller.cluster.raft.RaftState;
 import scala.concurrent.Await;
 import scala.concurrent.duration.FiniteDuration;
 
+// ZDY_NOTE:
+
+// 2015.10.24: we have managed to changed to EntityOwnerShip service provided by odl.
+
 //ZDY_NOTE: we have two place that we need to decide active and backup
 // 1st: active switch and backup switch
 // 2nd: active controller and backup controller
@@ -35,6 +39,8 @@ import scala.concurrent.duration.FiniteDuration;
  * If registered, then it cancels the scheduler, otherwise it starts the scheduler again until registration finished.
  *
  */
+
+@Deprecated
 public class MdsalRoleChangeListener extends AbstractUntypedActor implements AutoCloseable{
 
     // Defined in DistributedDataStoreFactory.
