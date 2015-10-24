@@ -21,6 +21,7 @@
         <configCodeGeneratorPath>src/main/yang-gen-config</configCodeGeneratorPath>
         <nexus_proxy>http://nexus.opendaylight.org/content</nexus_proxy>
         <config.configfile.directory>etc/opendaylight/karaf</config.configfile.directory>
+        <!-- Defined in karaf-parent-li-sr2, copy to here. -->
         <karaf.version>3.0.1</karaf.version>
         <!-- ZDY_NOTE: the following version property should be consistent with odl parent used above
              we should keep up with lithium mainline -->
