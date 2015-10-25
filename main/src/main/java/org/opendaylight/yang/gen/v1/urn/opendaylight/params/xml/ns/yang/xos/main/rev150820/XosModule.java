@@ -77,7 +77,7 @@ public class XosModule extends org.opendaylight.yang.gen.v1.urn.opendaylight.par
         // Create controller active/backup listener actor.
         // Not used now, we switch to use the new entityOwnershipService.
         // ActorRef listenerActor = system.actorOf(MdsalRoleChangeListener.getProps("member-1"));
-        roleChangeListener = new NewMdsalRoleChangeListener(entityOwnershipService, getHaEntityName());
+        roleChangeListener = new NewMdsalRoleChangeListener(entityOwnershipService);
 
         // Register xos rpc.
         getBindingAwareBrokerDependency().registerProvider(new XosRpcProvider());

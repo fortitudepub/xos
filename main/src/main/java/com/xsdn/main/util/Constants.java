@@ -22,4 +22,5 @@ public class Constants {
     // For clustering entity owner ship detect, we use this mechanism to detect which
     // application is master.
     public static String XOS_HA_ENTITY_TYPE = "XOS_HA_ENTITY";
+    public static String XOS_HA_ENTITY_ID = "XOS_HA_ENTITY_ID";
 }

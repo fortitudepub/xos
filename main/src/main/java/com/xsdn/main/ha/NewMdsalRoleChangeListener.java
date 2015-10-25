@@ -18,10 +18,9 @@ public class NewMdsalRoleChangeListener implements EntityOwnershipListener {
     String entityId;
     Entity entity;
 
-    public NewMdsalRoleChangeListener(EntityOwnershipService entityOwnershipService, String entityId) {
+    public NewMdsalRoleChangeListener(EntityOwnershipService entityOwnershipService) {
         this.entityOwnershipService = entityOwnershipService;
-        this.entityId = entityId;
-        this.entity = new Entity(Constants.XOS_HA_ENTITY_TYPE, this.entityId);
+        this.entity = new Entity(Constants.XOS_HA_ENTITY_TYPE, Constants.XOS_HA_ENTITY_ID);
         this.startup();
     }
 
@@ -31,7 +30,7 @@ public class NewMdsalRoleChangeListener implements EntityOwnershipListener {
         try {
             this.entityOwnershipService.registerCandidate(entity);
         } catch (CandidateAlreadyRegisteredException e) {
-            LOG.error("XOS Entity id {} is wrong, HA functionality will not work", this.entityId);
+            // The case when we restart this node, skip it.
         }
 
         LOG.info("XOS entity owner ship registration finished");

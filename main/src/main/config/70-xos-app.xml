@@ -68,8 +68,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
             <name>entity-ownership-service</name>
           </entity-ownership-service>
 
-          <ha-entity-name>xos-app-inst1</ha-entity-name>
-
 		</module>
       </modules>
     </data>

@@ -69,10 +69,6 @@ module xos-main {
                     }
                 }
             }
-
-            leaf ha-entity-name {
-                type string;
-            }
         }
     }
 }
