@@ -351,7 +351,32 @@ public class SdnSwitchActor extends UntypedActor {
             return;
         }
 
-        addDftArpFlows();
+        this.addDftArpFlows();
+    }
+
+    private void rebuildActorStateWhenActive() {
+        // ZDY_NOTE: if we become active again, we need at least do the following stuffs
+        // 1. check predefined app flow have been write to the md-sal data store, if not
+        //    we should reinstall it.
+        // 2. clear local configuration caches like hostinfo and etc. reload the data from
+        //    md-sal configuration store and build cache again.
+        // 3. after the above event have been finished, we switch into the fully functional status
+        //    and before these stuffs have been finished, we should not react exterior event like
+        //    packet in and etc.
+        // if 1/2 need asynchronous processing, we need add a hold mechanism to this actor to
+        // hold all the things we do not want to occur during this time.
+
+        // @2015.10.26
+
+        // STEP1:
+
+        // STEP2:
+
+        // FINISHED...
+
+        if (this.appStatus == XosAppStatusMgr.APP_STATUS_INVALID) {
+            this.addInitFlows();
+        }
     }
 
     private void processAppStatusUpdate(int status) {
@@ -363,24 +388,9 @@ public class SdnSwitchActor extends UntypedActor {
 
         if (this.appStatus != status) {
             if (status == XosAppStatusMgr.APP_STATUS_ACTIVE) {
-                // We are now running active controller.
-                // There will be quite complicate logic, may be we should spawn a seperate actor to handle all
-                // the sub task.
-                // Basically we need handle the following tasks:
-                // 1. INVALID->ACTIVE
-                //    1.1 init state, clear all flow of the managed switch.
-                //    1.2 update controller role to master instead of equal.
-                //    1.2 install default flow and store the flow in to the xos operati.
-                // 2. BACKUP->ACTIVE
-                //    2.1
-                // 3. ACTIVE->BACKUP
-                //    3.1 ... TBD
-
-                // Case 1, INVALID->ACTIVE.
-                if (this.appStatus == XosAppStatusMgr.APP_STATUS_INVALID) {
-                    this.addInitFlows();
-                }
+                this.rebuildActorStateWhenActive();
             }
+
             this.appStatus = status;
 
             LOG.info("Update sdn switch actor to status {}", this.appStatus);
@@ -408,6 +418,13 @@ public class SdnSwitchActor extends UntypedActor {
 
         this.deviceConnected = true;
 
+        // ZDY_NOTE:
+        // for HA, after the switch have been connected, we should do a synchronous check to ensure
+        // all the app flows/user flows have been successfully downloaded to the switch, if not,
+        // we should download it again.
+        // This can be done using flow stats multipart message.
+        // 2015.10.26
+
         // TODO: do the reconciliation logic, the code here is just a test to do the event driven logic.
         if ((null != this.dpid) && (this.appStatus == XosAppStatusMgr.APP_STATUS_ACTIVE)) {
             this.addInitFlows();
@@ -421,6 +438,10 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processSubnetUpdate(ManagedSubnetUpdate subnetUpdate) {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         // TODO: this code need to be refactored because I only want to extract the subnet information
         // more santity check need to be done.
         // And also, we should build a auxiliary map that use the virtual gateway ip as index to help
@@ -540,6 +561,10 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processArp(ArpPacketIn pktIn) {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         if (vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
             LOG.error("Virtual Gateway MAC address is not configured, no need to handle arp packet");
             return;
@@ -595,6 +620,10 @@ public class SdnSwitchActor extends UntypedActor {
      * Note: WZJ, process arp probe
      */
     private void processArpProbe() {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         for (Short key : this.subnetTracer.keySet()) {
             sendHostsArpProbe(key, this.subnetTracer.get(key));
         }
@@ -603,6 +632,10 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processUserFlowOp(UserFlowOp userFlowOp) {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         if (userFlowOp.op == OFutils.FLOW_ADD) {
             UserFlow userFlow = userFlowOp.userFlow;
 
@@ -617,6 +650,10 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processUserGroupOp(UserGroupOp userGroupOp) {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         if (userGroupOp.op == OFutils.GROUP_ADD) {
             UserGroup userGroup = userGroupOp.userGroup;
 
@@ -812,6 +849,11 @@ public class SdnSwitchActor extends UntypedActor {
             return;
         }
 
+        if (this.subnetMap.get(subnetId).getVirtualGateway() == null){
+            LOG.info("Subnet: " + subnetId + " virtual gateway configuration is not created.");
+            return;
+        }
+
         Ipv4Address vIP = this.subnetMap.get(subnetId).getVirtualGateway().getVirtualGatewayIp();
         if (vIP == null) {
             LOG.info("Subnet: " + subnetId + " virtual gateway ip is not configured.");
@@ -998,6 +1040,10 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processVirtualGatewayMacUpdate(VirtualGatewayMacUpdate update) {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         // Only handle changes.
         if (!update.address.equals(this.vGMAC)) {
             this.vGMAC = update.address;
@@ -1007,6 +1053,10 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processEdgeRouterInterfaceIpUpdate(EdgeRouterInterfaceIpUpdate update) {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         // Only handle changes.
         if (!update.address.equals(this.edgeRouterInterfaceIp)) {
             this.edgeRouterInterfaceIp = update.address;
@@ -1015,6 +1065,10 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processQuaggaInterfaceIpUpdate(QuaggaInterfaceIpUpdate update) {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         // Only handle changes.
         if (!update.address.equals(this.quaggaInterfaceIp)) {
             this.quaggaInterfaceIp = update.address;
