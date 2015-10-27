@@ -9,14 +9,14 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.xsdn</groupId>
-    <artifactId>xos-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>com.xsdn.xos</groupId>
+    <artifactId>parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
-  <groupId>com.xsdn</groupId>
-  <artifactId>xos-features</artifactId>
+  <groupId>com.xsdn.xos</groupId>
+  <artifactId>features</artifactId>
   <name>${project.artifactId}</name>
   <packaging>jar</packaging>
 
@@ -60,32 +60,25 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
     </dependency>
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
-      <artifactId>features-openflowplugin</artifactId>
-      <classifier>features</classifier>
-      <type>xml</type>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.l2switch</groupId>
-      <artifactId>features-l2switch</artifactId>
-      <version>${l2switch.version}</version>
+      <artifactId>features-openflowplugin-li</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>xos-main</artifactId>
+      <artifactId>main</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>xos-main</artifactId>
+      <artifactId>main</artifactId>
       <version>${project.version}</version>
       <type>xml</type>
       <classifier>config</classifier>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>xos-model</artifactId>
+      <artifactId>model</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

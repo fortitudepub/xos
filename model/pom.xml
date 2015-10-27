@@ -10,19 +10,15 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.xsdn</groupId>
-    <artifactId>xos-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>com.xsdn.xos</groupId>
+    <artifactId>parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
-  <groupId>com.xsdn</groupId>
-  <artifactId>xos-model</artifactId>
+  <groupId>com.xsdn.xos</groupId>
+  <artifactId>model</artifactId>
   <packaging>bundle</packaging>
-
-  <properties>
-    <salGeneratorPath>src/main/yang-gen-sal</salGeneratorPath>
-  </properties>
 
   <!-- ZDY_NOTE: we do not need to specify version here for odl packages because
     dependencymanagement in parenet will import the pom from dependent project
@@ -84,7 +80,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
               <codeGenerators>
                 <generator>
                   <codeGeneratorClass>org.opendaylight.yangtools.maven.sal.api.gen.plugin.CodeGeneratorImpl</codeGeneratorClass>
-                  <outputBaseDir>${salGeneratorPath}</outputBaseDir>
+                  <outputBaseDir>${codeGeneratorPath}</outputBaseDir>
                 </generator>
               </codeGenerators>
               <!-- ZDY: this is a must because we import yang types defined in yangtools bundle, if this
@@ -99,7 +95,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
         <configuration>
           <filesets>
             <fileset>
-              <directory>${salGeneratorPath}</directory>
+              <directory>${codeGeneratorPath}</directory>
               <includes>
                 <include>**</include>
               </includes>

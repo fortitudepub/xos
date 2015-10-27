@@ -9,7 +9,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
 -->
 <snapshot>
   <required-capabilities>
-    <capability>urn:opendaylight:params:xml:ns:yang:xos:main?module=xos-main&amp;revision=2015-08-20</capability>
+    <capability>urn:com:xsdn:xos:params:xml:ns:yang:xos:main?module=xos-main&amp;revision=2015-08-20</capability>
     <capability>urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding?module=opendaylight-md-sal-binding&amp;revision=2013-10-28</capability>
   </required-capabilities>
   <configuration>
@@ -74,6 +74,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   </configuration>
 
   <required-capabilities>
-    <capability>urn:opendaylight:packet:packet-handler-impl?module=packet-handler-impl&amp;revision=2014-05-28</capability>
+    <capability>urn:com:xsdn:xos:packet:packet-handler-impl?module=packet-handler-impl&amp;revision=2014-05-28</capability>
   </required-capabilities>
 </snapshot>

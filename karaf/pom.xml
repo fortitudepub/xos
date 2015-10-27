@@ -9,14 +9,14 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.xsdn</groupId>
-    <artifactId>xos-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>com.xsdn.xos</groupId>
+    <artifactId>parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
-  <groupId>com.xsdn</groupId>
-  <artifactId>xos-karaf</artifactId>
+  <groupId>com.xsdn.xos</groupId>
+  <artifactId>karaf</artifactId>
   <name>${project.artifactId}</name>
   <prerequisites>
     <maven>3.1.1</maven>
@@ -51,17 +51,17 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
 
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>xos-model</artifactId>
+      <artifactId>model</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>xos-main</artifactId>
+      <artifactId>main</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>xos-features</artifactId>
+      <artifactId>features</artifactId>
       <version>${project.version}</version>
       <classifier>features</classifier>
       <type>xml</type>

@@ -1,6 +1,6 @@
 module xos-main {
     yang-version 1;
-    namespace "urn:opendaylight:params:xml:ns:yang:xos:main";
+    namespace "urn:com:xsdn:xos:params:xml:ns:yang:xos:main";
     prefix "xos-main";
 
     import config { prefix config; revision-date 2013-04-05; }

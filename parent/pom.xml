@@ -11,9 +11,9 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.xsdn</groupId>
-    <artifactId>xos-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>com.xsdn.xos</groupId>
+    <artifactId>parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -21,6 +21,7 @@
         <configCodeGeneratorPath>src/main/yang-gen-config</configCodeGeneratorPath>
         <nexus_proxy>http://nexus.opendaylight.org/content</nexus_proxy>
         <config.configfile.directory>etc/opendaylight/karaf</config.configfile.directory>
+        <config.packethandler.configfile>50-packethandler.xml</config.packethandler.configfile>
         <!-- Defined in karaf-parent-li-sr2, copy to here. -->
         <karaf.version>3.0.1</karaf.version>
         <!-- ZDY_NOTE: the following version property should be consistent with odl parent used above
@@ -35,7 +36,6 @@
         <controller.mdsal.version>1.2.2-Lithium-SR2</controller.mdsal.version>
         <openflowplugin.version>0.1.2-Lithium-SR2</openflowplugin.version>
         <dlux.version>0.2.2-Lithium-SR2</dlux.version>
-        <l2switch.version>0.2.2-Lithium-SR2</l2switch.version>
         <karaf.resources.version>1.5.2-Lithium-SR2</karaf.resources.version>
     </properties>
 
@@ -80,16 +80,6 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- lithium does not provide l2switch artifcat, odl mainline provide it
-                 sadly we have to maintain the version in our xos-main project.
-            <dependency>
-                <groupId>org.opendaylight.l2switch</groupId>
-                <artifactId>l2switch-artifacts</artifactId>
-                <version>${l2switch.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-            -->
         </dependencies>
     </dependencyManagement>
 

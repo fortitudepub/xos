@@ -10,14 +10,14 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.xsdn</groupId>
-    <artifactId>xos-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>com.xsdn.xos</groupId>
+    <artifactId>parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
-  <groupId>com.xsdn</groupId>
-  <artifactId>xos-main</artifactId>
+  <groupId>com.xsdn.xos</groupId>
+  <artifactId>main</artifactId>
   <packaging>bundle</packaging>
 
   <properties>
@@ -76,20 +76,19 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       <artifactId>model-flow-service</artifactId>
     </dependency>
 
-    <!-- some of l2switch components -->
     <dependency>
-      <groupId>org.opendaylight.l2switch.packethandler</groupId>
+      <groupId>${project.groupId}</groupId>
       <artifactId>packethandler-model</artifactId>
-      <version>${l2switch.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.l2switch.packethandler</groupId>
-      <artifactId>packethandler-impl</artifactId>
-      <version>${l2switch.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>xos-model</artifactId>
+      <artifactId>packethandler-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>model</artifactId>
       <version>${project.version}</version>
     </dependency>
 

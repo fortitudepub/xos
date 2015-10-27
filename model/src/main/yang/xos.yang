@@ -1,6 +1,6 @@
 module xos {
     yang-version 1;
-    namespace "urn:opendaylight:params:xml:ns:yang:xos";
+    namespace "urn:com:xsdn:xos:params:xml:ns:yang:xos";
     prefix "xos";
 
     import ietf-inet-types {prefix inet; revision-date "2010-09-24";}

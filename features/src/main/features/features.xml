@@ -13,8 +13,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   <repository>mvn:org.opendaylight.controller/features-adsal/${sal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-mdsal/${controller.mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-restconf/${controller.mdsal.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${openflowplugin.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.l2switch/features-l2switch/${l2switch.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin-li/${openflowplugin.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.dlux/features-dlux/${dlux.version}/xml/features</repository>
   <feature name='xsdn-xos-model' version='${project.version}' description='XSDN :: xos :: model'>
     <!-- ZDY_NOTE: we use nsf model to build our own model, and it will import yangtools-model automatically. -->
@@ -28,15 +27,11 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <feature version='${controller.mdsal.version}'>odl-mdsal-broker</feature>
     <!-- ZDY: surely we want to support clustering, enable clustering default -->
     <feature version='${controller.mdsal.version}'>odl-mdsal-clustering</feature>
-    <!-- ZDY: only depend on sourth-bound feature because we want manage flow by ourself instead of
-         flowrulemanager of openflowplugin.
-          it will be pulled by l2switch-packethandler.
-    <feature version="${openflowplugin.version}">odl-openflowplugin-southbound</feature>
-    -->
-    <!-- ZDY: add odl-l2switch-packethandler, since we do not want to bother reinvent the packet decoding logic
-      NOTE: we should carefully introduce other l2switch features since the functionality provided by it may
-      conflict with us. -->
-    <feature version="${l2switch.version}">odl-l2switch-packethandler</feature>
+    <!-- ZDY: migrate to lithium new openflowplugin design, the -li postfix is used to differentiate with
+      old design
+      since l2switch is not currrently migrated to the new openflowplugin, that why we copy the code we
+      previously used directly from l2switch. -->
+    <feature version="${openflowplugin.version}">odl-openflowplugin-southbound-li</feature>
     <feature version='${project.version}'>xsdn-xos-model</feature>
     <!-- we copy code from vtn project, which use jackson, so we must add to the bundle list -->
     <bundle>mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
