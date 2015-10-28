@@ -6,8 +6,7 @@
     <parent>
         <groupId>org.opendaylight.odlparent</groupId>
         <artifactId>odlparent</artifactId>
-        <!-- 2015.10.23 update to 1.5.3 lithium from 1.5.0 -->
-        <version>1.5.3-SNAPSHOT</version>
+        <version>1.5.2-Lithium-SR2</version>
         <relativePath/>
     </parent>
 
@@ -22,10 +21,9 @@
         <nexus_proxy>http://nexus.opendaylight.org/content</nexus_proxy>
         <config.configfile.directory>etc/opendaylight/karaf</config.configfile.directory>
         <config.packethandler.configfile>50-packethandler.xml</config.packethandler.configfile>
-        <!-- Defined in karaf-parent-li-sr2, copy to here. -->
-        <karaf.version>3.0.1</karaf.version>
         <!-- ZDY_NOTE: the following version property should be consistent with odl parent used above
-             we should keep up with lithium mainline -->
+             we should keep up with lithium mainline
+             also should not the odlparent version should also be consistent with here. -->
         <!-- YANG tools artifacts -->
         <yangtools.version>0.7.2-Lithium-SR2</yangtools.version>
         <!-- Controller artifacts -->

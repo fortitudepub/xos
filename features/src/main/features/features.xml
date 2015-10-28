@@ -7,19 +7,29 @@ This program and the accompanying materials are made available under the
 terms of the Eclipse Public License v1.0 which accompanies this distribution,
 and is available at http://www.eclipse.org/legal/epl-v10.html
 -->
-<features name="odl-xos-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+<features name="com-xsdn-xos-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
+  <repository>mvn:org.opendaylight.yangtools/features-yangtools/${yangtools.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-adsal/${sal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-mdsal/${controller.mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-restconf/${controller.mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin-li/${openflowplugin.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.dlux/features-dlux/${dlux.version}/xml/features</repository>
   <feature name='xsdn-xos-model' version='${project.version}' description='XSDN :: xos :: model'>
-    <!-- ZDY_NOTE: we use nsf model to build our own model, and it will import yangtools-model automatically. -->
-    <bundle>mvn:com.xsdn/xos-model/${project.version}</bundle>
+    <feature version='${yangtools.version}'>odl-yangtools-common</feature>
+    <feature version='${yangtools.version}'>odl-yangtools-models</feature>
+    <bundle>mvn:com.xsdn.xos/model/${project.version}</bundle>
   </feature>
-  <feature name='xsdn-xos' version='${project.version}' description='XSDN :: xos'>
+  <feature name='xsdn-xos-packethandler' version='${project.version}' description='XSDN :: xos :: packethandler'>
+    <!-- ZDY_NOTE: we use nsf model to build our own model, and it will import yangtools-model automatically. -->
+    <bundle>mvn:com.xsdn.xos/packethandler-model/${project.version}</bundle>
+    <bundle>mvn:com.xsdn.xos/packethandler-impl/${project.version}</bundle>
+    <configfile finalname="${configfile.directory}/50-packethandler.xml">
+      mvn:com.xsdn.xos/packethandler-config/${project.version}/xml/config
+    </configfile>
+  </feature>
+  <feature name='xsdn-xos-core' version='${project.version}' description='XSDN :: xos'>
     <!-- ZDY_NOTE: when we add new dependency feature here, must add the dependency to pom.xml of xos-features,otherwise
       the distribution karaf will does not have the repository copied to the karaf/system directory,
        also we should add the corresponding feature repository on top of this xml. -->
@@ -33,15 +43,18 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       previously used directly from l2switch. -->
     <feature version="${openflowplugin.version}">odl-openflowplugin-southbound-li</feature>
     <feature version='${project.version}'>xsdn-xos-model</feature>
+    <feature version='${project.version}'>xsdn-xos-packethandler</feature>
     <!-- we copy code from vtn project, which use jackson, so we must add to the bundle list -->
     <bundle>mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
     <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
     <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
-    <bundle>mvn:com.xsdn/xos-main/${project.version}</bundle>
-    <configfile finalname="${configfile.directory}/xos.xml">mvn:com.xsdn/xos-main/${project.version}/xml/config</configfile>
+    <bundle>mvn:com.xsdn.xos/main/${project.version}</bundle>
+    <configfile finalname="${configfile.directory}/70-xos-app.xml">
+    mvn:com.xsdn.xos/main/${project.version}/xml/config
+    </configfile>
   </feature>
   <feature name='xsdn-xos-rest' version='${project.version}' description='XSDN :: xos :: REST'>
-    <feature version="${project.version}">xsdn-xos</feature>
+    <feature version="${project.version}">xsdn-xos-core</feature>
     <feature version="${controller.mdsal.version}">odl-restconf</feature>
   </feature>
   <feature name='xsdn-xos-ui' version='${project.version}' description='XSDN :: xos :: UI'>

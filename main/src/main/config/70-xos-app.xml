@@ -21,7 +21,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
 	  <!-- provide default configuration for packet-handler-impl which we depend from l2switch project. -->
       <modules xmlns="urn:opendaylight:params:xml:ns:yang:controller:config">
         <module>
-          <type xmlns:prefix="urn:opendaylight:packet:packet-handler-impl">
+          <type xmlns:prefix="urn:com:xsdn:xos:packet:packet-handler-impl">
             prefix:packet-handler-impl
           </type>
           <name>packet-handler-impl</name>
@@ -35,7 +35,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
         </module>
 		
         <module>
-          <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:xos:main">prefix:xos-main</type>
+          <type xmlns:prefix="urn:com:xsdn:xos:params:xml:ns:yang:xos:main">prefix:xos-main</type>
           <name>xos-default</name>
           <notification-service>
             <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">

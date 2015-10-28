@@ -18,8 +18,8 @@ import com.xsdn.main.config.frm.FlowNodeObserver;
 import com.xsdn.main.config.frm.ForwardingRulesCommiter;
 import com.xsdn.main.config.frm.ForwardingRulesManager;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.UserFlow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.xos.rev150820.sdn._switch.UserGroup;
+import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.params.xml.ns.yang.xos.rev150820.sdn._switch.UserFlow;
+import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.params.xml.ns.yang.xos.rev150820.sdn._switch.UserGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
