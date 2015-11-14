@@ -78,7 +78,7 @@ public class SdnSwitchActor extends UntypedActor {
     private SalGroupService salGroupService = null;
     private SalFlowService salFlowService = null;
     private DataBroker dataService = null;
-    private String dpid;
+    private String dpid = null;
     private NodeId nodeId;
     private int appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
     private boolean deviceConnected = false;
@@ -636,6 +636,10 @@ public class SdnSwitchActor extends UntypedActor {
             return;
         }
 
+        if (this.dpid == null) {
+            return; // dpid is not configured, just return.
+        }
+
         if (userFlowOp.op == OFutils.FLOW_ADD) {
             UserFlow userFlow = userFlowOp.userFlow;
 
@@ -654,6 +658,10 @@ public class SdnSwitchActor extends UntypedActor {
             return;
         }
 
+        if (this.dpid == null) {
+            return; // dpid is not configured, just return.
+        }
+        
         if (userGroupOp.op == OFutils.GROUP_ADD) {
             UserGroup userGroup = userGroupOp.userGroup;
 
@@ -909,8 +917,7 @@ public class SdnSwitchActor extends UntypedActor {
         return;
     }
 
-    // TODO: pending zhijun's mac spoofing impl
-    // the flow should be:
+    // The flow should be:
     // match: ethertype(ipv4)+dst_mac(the virtual gw mac, if the mac is not present, should not install the flow)
     // action: mod_eth_src(quagga interface mac),mod_eth_dst(edge router interface mac),output to uplink interface \
     // (edge router interface ip port learned by mac snooping)
@@ -920,7 +927,7 @@ public class SdnSwitchActor extends UntypedActor {
     // 2. dst_mac (edge router interface mac)
     // 3. output_of_port (port where edge router interface mac learned)
     // 4. vmac of this sdn switch.
-    private void addDftRouteFlow(MacAddress vGMAC, MacAddress srcMAC, MacAddress dstMAC, NodeConnectorRef output) {
+    private void addDftRouteFlow(MacAddress vGMAC, MacAddress srcMAC, MacAddress dstMAC/* Not used, NodeConnectorRef output*/) {
         // Match: IPV4+VGMAC.
         EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
                 .setEthernetType(new EthernetTypeBuilder()
@@ -976,14 +983,17 @@ public class SdnSwitchActor extends UntypedActor {
                                 .setAddress(dstMAC)
                                 .build())
                         .build());
-        Uri destPortUri = output.getValue().firstKeyOf(NodeConnector.class, NodeConnectorKey.class).getId();
+        // 20151114: ovs deny packet send to ingress port unless use IN_PORT.
+        // In asiainfo scenario, the dft route 's destination port will always be IN_PORT since we are
+        // actually do one-arm routing.
+        // Uri destPortUri = output.getValue().firstKeyOf(NodeConnector.class, NodeConnectorKey.class).getId();
         ActionBuilder outputActionBuilder = new ActionBuilder()
                 .setOrder(0)
                 .setKey(new ActionKey(0))
                 .setAction(new OutputActionCaseBuilder()
                         .setOutputAction(new OutputActionBuilder()
                                 .setMaxLength(0xffff)
-                                .setOutputNodeConnector(destPortUri)
+                                .setOutputNodeConnector(new Uri(OutputPortValues.INPORT.toString()))
                                 .build())
                         .build());
 
@@ -1022,10 +1032,11 @@ public class SdnSwitchActor extends UntypedActor {
         }
 
         // Check quagga interface ip is configured and it's mac (default route source mac) is probed.
+        /* No need now.
         if (this.quaggaInterfaceIp.equals(Constants.INVALID_IP_ADDRESS) ||
                 (null == this.getHostInfoByIpAddr(this.quaggaInterfaceIp))) {
             return;
-        }
+        }*/
 
         // Check edge router interface ip is configured and it's mac (default route dst mac) & port is probed.
         if (this.edgeRouterInterfaceIp.equals(Constants.INVALID_IP_ADDRESS) ||
@@ -1033,10 +1044,12 @@ public class SdnSwitchActor extends UntypedActor {
             return;
         }
 
+        // We are l3 switch, so we can use vGMAC as source match if we route the packet to the edge router
+        // instead of let user specify quaggaInterfaceIP.
         addDftRouteFlow(this.vGMAC,
-                this.getHostInfoByIpAddr(this.quaggaInterfaceIp).getMac(),
-                this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getMac(),
-                this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getIngress());
+                this.vGMAC, //this.getHostInfoByIpAddr(this.quaggaInterfaceIp).getMac(),
+                this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getMac()/* Not used,
+                this.getHostInfoByIpAddr(this.edgeRouterInterfaceIp).getIngress()*/);
     }
 
     private void processVirtualGatewayMacUpdate(VirtualGatewayMacUpdate update) {
@@ -1064,6 +1077,7 @@ public class SdnSwitchActor extends UntypedActor {
         }
     }
 
+    /* No need now
     private void processQuaggaInterfaceIpUpdate(QuaggaInterfaceIpUpdate update) {
         if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
             return;
@@ -1075,6 +1089,7 @@ public class SdnSwitchActor extends UntypedActor {
             tryAddDftRouteFlow();
         }
     }
+    */
 
     public void onReceive(Object message) throws Exception {
         if (message instanceof DpIdCreated) {
@@ -1102,9 +1117,10 @@ public class SdnSwitchActor extends UntypedActor {
             processVirtualGatewayMacUpdate((VirtualGatewayMacUpdate) message);
         } else if (message instanceof EdgeRouterInterfaceIpUpdate) {
             processEdgeRouterInterfaceIpUpdate((EdgeRouterInterfaceIpUpdate) message);
-        } else if (message instanceof QuaggaInterfaceIpUpdate) {
+        }/* no need now. else if (message instanceof QuaggaInterfaceIpUpdate) {
             processQuaggaInterfaceIpUpdate((QuaggaInterfaceIpUpdate) message);
-        } else {
+        } */
+        else {
             unhandled(message);
         }
     }

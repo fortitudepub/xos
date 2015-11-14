@@ -11,16 +11,16 @@ public class XosAppStatusMgr {
     public static int APP_STATUS_ACTIVE = 1;
     public static int APP_STATUS_BACKUP = 2;
 
-    private static XosAppStatusMgr xosAppStatus;
+    private static XosAppStatusMgr xosAppStatusMgr;
 
     public static XosAppStatusMgr getXosAppStatus() {
-        if (xosAppStatus == null) {
-            xosAppStatus = new XosAppStatusMgr();
-            xosAppStatus.appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
-            return xosAppStatus;
+        if (xosAppStatusMgr == null) {
+            xosAppStatusMgr = new XosAppStatusMgr();
+            xosAppStatusMgr.appStatus = XosAppStatusMgr.APP_STATUS_INVALID;
+            return xosAppStatusMgr;
         }
 
-        return xosAppStatus;
+        return xosAppStatusMgr;
     }
 
     public void setStatus(int status) {
