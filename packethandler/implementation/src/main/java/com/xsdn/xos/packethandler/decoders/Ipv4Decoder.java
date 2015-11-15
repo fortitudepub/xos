@@ -14,7 +14,10 @@ import java.util.List;
 import com.xsdn.xos.packethandler.decoders.utils.BitBufferHelper;
 import com.xsdn.xos.packethandler.decoders.utils.BufferException;
 import com.xsdn.xos.packethandler.decoders.utils.NetUtils;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
+import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.arp.rev140528.ArpPacketReceived;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.basepacket.rev140528.packet.chain.grp.PacketChain;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.basepacket.rev140528.packet.chain.grp.PacketChainBuilder;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.basepacket.rev140528.packet.chain.grp.packet.chain.Packet;
@@ -39,11 +42,11 @@ public class Ipv4Decoder extends AbstractPacketDecoder<EthernetPacketReceived, I
     implements EthernetPacketListener {
 
   private static final Logger _logger = LoggerFactory.getLogger(Ipv4Decoder.class);
-
-  public Ipv4Decoder(NotificationProviderService notificationProviderService) {
-    super(Ipv4PacketReceived.class, notificationProviderService);
+  
+  public Ipv4Decoder(NotificationService notificationService, NotificationPublishService notificationPublishService) {
+    super(Ipv4PacketReceived.class, notificationService, notificationPublishService);
+    notificationService.registerNotificationListener(this);
   }
-
   /**
    * Decode an EthernetPacket into an Ipv4Packet
    */

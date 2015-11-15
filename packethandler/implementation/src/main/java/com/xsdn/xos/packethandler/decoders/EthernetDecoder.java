@@ -13,6 +13,8 @@ import com.xsdn.xos.packethandler.decoders.utils.BitBufferHelper;
 import com.xsdn.xos.packethandler.decoders.utils.BufferException;
 import com.xsdn.xos.packethandler.decoders.utils.HexEncode;
 import com.xsdn.xos.packethandler.decoders.utils.NetUtils;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.basepacket.rev140528.packet.chain.grp.PacketChain;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.basepacket.rev140528.packet.chain.grp.PacketChainBuilder;
@@ -40,8 +42,9 @@ public class EthernetDecoder extends AbstractPacketDecoder<PacketReceived, Ether
   public static final Integer ETHERTYPE_8021Q = 0x8100;
   public static final Integer ETHERTYPE_QINQ = 0x9100;
 
-  public EthernetDecoder(NotificationProviderService notificationProviderService) {
-    super(EthernetPacketReceived.class, notificationProviderService);
+  public EthernetDecoder(NotificationService notificationService, NotificationPublishService notificationPublishService) {
+    super(EthernetPacketReceived.class, notificationService, notificationPublishService);
+    notificationService.registerNotificationListener(this);
   }
 
   @Override

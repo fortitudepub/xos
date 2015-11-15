@@ -10,6 +10,8 @@ package com.xsdn.xos.packethandler.decoders;
 import com.xsdn.xos.packethandler.decoders.utils.BitBufferHelper;
 import com.xsdn.xos.packethandler.decoders.utils.BufferException;
 import com.xsdn.xos.packethandler.decoders.utils.NetUtils;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.basepacket.rev140528.packet.chain.grp.PacketChain;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.basepacket.rev140528.packet.chain.grp.PacketChainBuilder;
@@ -18,6 +20,7 @@ import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ethernet.rev140528.E
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ethernet.rev140528.EthernetPacketReceived;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ethernet.rev140528.KnownEtherType;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ethernet.rev140528.ethernet.packet.received.packet.chain.packet.EthernetPacket;
+import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ipv4.rev140528.Ipv4PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ipv4.rev140528.KnownIpProtocols;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ipv6.rev140528.Ipv6PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.ipv6.rev140528.Ipv6PacketReceivedBuilder;
@@ -44,8 +47,9 @@ public class Ipv6Decoder extends AbstractPacketDecoder<EthernetPacketReceived, I
 
   private static final Logger _logger = LoggerFactory.getLogger(Ipv6Decoder.class);
 
-  public Ipv6Decoder(NotificationProviderService notificationProviderService) {
-    super(Ipv6PacketReceived.class, notificationProviderService);
+  public Ipv6Decoder(NotificationService notificationService, NotificationPublishService notificationPublishService) {
+    super(Ipv6PacketReceived.class, notificationService, notificationPublishService);
+    notificationService.registerNotificationListener(this);
   }
 
   /**

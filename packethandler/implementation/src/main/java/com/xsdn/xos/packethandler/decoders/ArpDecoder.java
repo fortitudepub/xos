@@ -11,6 +11,8 @@ import com.xsdn.xos.packethandler.decoders.utils.BitBufferHelper;
 import com.xsdn.xos.packethandler.decoders.utils.BufferException;
 import com.xsdn.xos.packethandler.decoders.utils.HexEncode;
 import com.xsdn.xos.packethandler.decoders.utils.NetUtils;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.arp.rev140528.ArpPacketReceived;
 import org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.arp.rev140528.ArpPacketReceivedBuilder;
@@ -40,10 +42,10 @@ public class ArpDecoder extends AbstractPacketDecoder<EthernetPacketReceived, Ar
 
   private static final Logger _logger = LoggerFactory.getLogger(ArpDecoder.class);
 
-  public ArpDecoder(NotificationProviderService notificationProviderService) {
-    super(ArpPacketReceived.class, notificationProviderService);
+  public ArpDecoder(NotificationService notificationService, NotificationPublishService notificationPublishService) {
+    super(ArpPacketReceived.class, notificationService, notificationPublishService);
+    notificationService.registerNotificationListener(this);
   }
-
   /**
    * Decode an EthernetPacket into an ArpPacket
    */

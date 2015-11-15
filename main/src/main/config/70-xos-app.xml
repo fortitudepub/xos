@@ -17,31 +17,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <!-- ZDY: we run our app within ODL, so we can use binding instead of dom api. -->
 
     <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-
-	  <!-- provide default configuration for packet-handler-impl which we depend from l2switch project. -->
-      <modules xmlns="urn:opendaylight:params:xml:ns:yang:controller:config">
-        <module>
-          <type xmlns:prefix="urn:com:xsdn:xos:packet:packet-handler-impl">
-            prefix:packet-handler-impl
-          </type>
-          <name>packet-handler-impl</name>
-
-          <notification-service>
-            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-              binding:binding-notification-service
-            </type>
-            <name>binding-notification-broker</name>
-          </notification-service>
-        </module>
-		
+      <modules>
         <module>
           <type xmlns:prefix="urn:com:xsdn:xos:params:xml:ns:yang:xos:main">prefix:xos-main</type>
           <name>xos-default</name>
           <notification-service>
-            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-              binding:binding-notification-service
-            </type>
-            <name>binding-notification-broker</name>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">binding:binding-new-notification-service</type>
+            <name>binding-notification-adapter</name>
           </notification-service>
           <data-broker>
             <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
@@ -67,7 +49,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
             </type>
             <name>entity-ownership-service</name>
           </entity-ownership-service>
-
 		</module>
       </modules>
     </data>

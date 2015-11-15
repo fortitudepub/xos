@@ -7,7 +7,9 @@
  */
 package com.xsdn.xos.packethandler.decoders;
 
-import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
 import org.opendaylight.yangtools.concepts.Registration;
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.NotificationListener;
@@ -16,12 +18,12 @@ import org.opendaylight.yangtools.yang.binding.NotificationListener;
  * A base class for all decoders. Each extended decoder should also implement a notification listener
  * that it can consume. And make use of
  */
-public abstract class AbstractPacketDecoder<ConsumedPacketNotification, ProducedPacketNotification extends Notification>
-    implements  NotificationProviderService.NotificationInterestListener , AutoCloseable {
+public abstract class AbstractPacketDecoder<ConsumedPacketNotification, ProducedPacketNotification extends Notification>  {
 
 
   private Class<ProducedPacketNotification> producedPacketNotificationType;
-  private NotificationProviderService notificationProviderService;
+  private NotificationService notificationService;
+  private NotificationPublishService notificationPublishService;
 
 
   protected Registration listenerRegistration;
@@ -29,29 +31,15 @@ public abstract class AbstractPacketDecoder<ConsumedPacketNotification, Produced
   /**
    * Constructor to
    * @param producedPacketNotificationType
-   * @param notificationProviderService
+   * @param notificationService
    */
-  public  AbstractPacketDecoder(Class<ProducedPacketNotification> producedPacketNotificationType, NotificationProviderService notificationProviderService) {
+  public  AbstractPacketDecoder(Class<ProducedPacketNotification> producedPacketNotificationType,
+                                NotificationService notificationService,
+                                NotificationPublishService notificationPublishService) {
     this.producedPacketNotificationType = producedPacketNotificationType;
-    this.notificationProviderService = notificationProviderService;
-    notificationProviderService.registerInterestListener(this);
+    this.notificationService = notificationService;
+    this.notificationPublishService = notificationPublishService;
   }
-
-
-  /**
-   * Keeps track of listeners registered for the notification that a decoder produces.
-   * @param aClass
-   */
-  @Override
-  public synchronized void onNotificationSubscribtion(Class<? extends Notification> aClass) {
-    if (aClass !=null && aClass.equals(producedPacketNotificationType)) {
-      if(listenerRegistration == null) {
-        NotificationListener notificationListener = getConsumedNotificationListener();
-        listenerRegistration = notificationProviderService.registerNotificationListener(notificationListener);
-      }
-    }
-  }
-
 
   /**
    * Every extended decoder should call this method on a receipt of a input packet notification.
@@ -64,7 +52,7 @@ public abstract class AbstractPacketDecoder<ConsumedPacketNotification, Produced
       packetNotification = decode(consumedPacketNotification);
     }
     if(packetNotification != null) {
-      notificationProviderService.publish(packetNotification);
+      notificationPublishService.offerNotification(packetNotification);
     }
   }
   /**
@@ -79,12 +67,4 @@ public abstract class AbstractPacketDecoder<ConsumedPacketNotification, Produced
   public abstract NotificationListener getConsumedNotificationListener();
 
   public abstract boolean canDecode(ConsumedPacketNotification consumedPacketNotification);
-
-
-  @Override
-  public void close() throws Exception {
-    if(listenerRegistration != null) {
-      listenerRegistration.close();
-    }
-  }
 }

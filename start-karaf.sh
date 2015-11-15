@@ -5,8 +5,9 @@ mkdir -p ./karaf/target/assembly/configuration/initial
 cp ./conf/modules.conf ./karaf/target/assembly/configuration/initial/
 cp ./conf/module-shards.conf ./karaf/target/assembly/configuration/initial/
 
-# fix 3.0.1 issue.
-sed -i 's/\(.*URLHandlers\),.*/\1/;s/.*{karaf\.framework}.*//' ./karaf/target/assembly/etc/config.properties
+# fix 3.0.1 issue, no need anymore since I have fixed the issue that we can not use 3.0.3.
+# now we run 3.0.3 karaf.
+#sed -i 's/\(.*URLHandlers\),.*/\1/;s/.*{karaf\.framework}.*//' ./karaf/target/assembly/etc/config.properties
 
 # patch org.ops4j.pax.url.mvn.repositories to use local repo.
 # note, if you adjust m2 repo, change this.

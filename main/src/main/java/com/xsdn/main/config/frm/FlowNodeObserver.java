@@ -8,6 +8,7 @@
 
 package com.xsdn.main.config.frm;
 
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -34,7 +35,9 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
  *
  * Created: Aug 26, 2014
  */
-public interface FlowNodeObserver extends DataChangeListener, AutoCloseable {
+// Change to clustered dcl since xos app 's leader may differ with mdsal shard leader in that
+// case the xos leader app will not have the data notified.
+public interface FlowNodeObserver extends ClusteredDataChangeListener, AutoCloseable {
 
     /**
      * Method contains Node registration to {@link ForwardingRulesManager} functionality

@@ -2,7 +2,8 @@ package org.opendaylight.yang.gen.v1.urn.com.xsdn.xos.packet.packet.handler.impl
 
 import com.google.common.collect.ImmutableSet;
 import com.xsdn.xos.packethandler.decoders.*;
-import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +27,9 @@ public class PacketHandlerModule extends org.opendaylight.yang.gen.v1.urn.com.xs
 
     @Override
     public java.lang.AutoCloseable createInstance() {
-        NotificationProviderService notificationService = getNotificationServiceDependency();
-        initiateDecoders(notificationService);
+        NotificationService notificationService = getNotificationServiceDependency();
+        NotificationPublishService notificationPublishService = getNotificationPublishServiceDependency();
+        initiateDecoders(notificationService, notificationPublishService);
 
         final class CloseResources implements AutoCloseable {
             @Override
@@ -42,19 +44,19 @@ public class PacketHandlerModule extends org.opendaylight.yang.gen.v1.urn.com.xs
         return ret;
     }
 
-    private void initiateDecoders(NotificationProviderService notificationProviderService) {
+    private void initiateDecoders(NotificationService notificationService, NotificationPublishService notificationPublishService) {
         decoders = new ImmutableSet.Builder<AbstractPacketDecoder>()
-                .add(new EthernetDecoder(notificationProviderService))
-                .add(new ArpDecoder(notificationProviderService))
-                .add(new Ipv4Decoder(notificationProviderService))
-                .add(new Ipv6Decoder(notificationProviderService))
+                .add(new EthernetDecoder(notificationService, notificationPublishService))
+                .add(new ArpDecoder(notificationService, notificationPublishService))
+                .add(new Ipv4Decoder(notificationService, notificationPublishService))
+                .add(new Ipv6Decoder(notificationService, notificationPublishService))
                 .build();
     }
 
     private void closeDecoders() throws Exception {
         if(decoders != null && !decoders.isEmpty()) {
             for(AbstractPacketDecoder decoder : decoders) {
-                decoder.close();
+                // ZDY_TODO: need free resource. decoder.close();
             }
         }
     }

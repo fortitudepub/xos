@@ -18,11 +18,13 @@
           <name>packet-handler-impl</name>
 
           <notification-service>
-            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-              binding:binding-notification-service
-            </type>
-            <name>binding-notification-broker</name>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">binding:binding-new-notification-service</type>
+            <name>binding-notification-adapter</name>
           </notification-service>
+          <notification-publish-service>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">binding:binding-new-notification-publish-service</type>
+            <name>binding-notification-publish-adapter</name>
+          </notification-publish-service>
         </module>
       </modules>
     </data>

@@ -383,6 +383,7 @@ public class SdnSwitchActor extends UntypedActor {
         // Dpid is not set yet, just record app status.
         if (null == this.dpid) {
             this.appStatus = status;
+            LOG.info("Update sdn switch actor to status {}", this.appStatus);
             return;
         }
 
@@ -438,9 +439,11 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processSubnetUpdate(ManagedSubnetUpdate subnetUpdate) {
+        /* in non active node, we should also build the internal data.
         if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
             return;
         }
+        */
 
         // TODO: this code need to be refactored because I only want to extract the subnet information
         // more santity check need to be done.
@@ -624,6 +627,9 @@ public class SdnSwitchActor extends UntypedActor {
             return;
         }
 
+        if (this.dpid == null) {
+            return; //dpid is not configured means the switch is idle, just return.
+        }
         for (Short key : this.subnetTracer.keySet()) {
             sendHostsArpProbe(key, this.subnetTracer.get(key));
         }
@@ -847,6 +853,11 @@ public class SdnSwitchActor extends UntypedActor {
      * Note: WZJ, send arp request for arp probe
      */
     private void sendHostsArpProbe(Short subnetId, List<String> listIp) {
+        /* On follower node, we should not process arp probe. */
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         if (subnetId == null || listIp == null) {
             LOG.error("Send hosts arp probe error.");
             return;
@@ -1024,8 +1035,11 @@ public class SdnSwitchActor extends UntypedActor {
         LOG.info("Pushed init flow {} to the switch {}", Constants.XOS_APP_DFT_ROUTE_FLOW_NAME, this.dpid);
     }
 
-    // TODO: need handle information update.
     private void tryAddDftRouteFlow() {
+        if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
+            return;
+        }
+
         // Check vgmac is configured.
         if (this.vGMAC.equals(Constants.INVALID_MAC_ADDRESS)) {
             return;
@@ -1053,9 +1067,11 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processVirtualGatewayMacUpdate(VirtualGatewayMacUpdate update) {
+        /* let follower the build local data.
         if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
             return;
         }
+        */
 
         // Only handle changes.
         if (!update.address.equals(this.vGMAC)) {
@@ -1066,9 +1082,11 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processEdgeRouterInterfaceIpUpdate(EdgeRouterInterfaceIpUpdate update) {
+        /* let follower the build local data.
         if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
             return;
         }
+        */
 
         // Only handle changes.
         if (!update.address.equals(this.edgeRouterInterfaceIp)) {

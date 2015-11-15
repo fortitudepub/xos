@@ -2,6 +2,7 @@ package com.xsdn.main.config;
 
 import com.xsdn.main.sw.SdnSwitchActor;
 import com.xsdn.main.sw.SdnSwitchManager;
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker;
@@ -26,7 +27,9 @@ import java.util.Set;
 /**
  * Created by fortitude on 15-8-27.
  */
-public class ConfigDataListener implements DataChangeListener {
+// Change to clustered dcl since xos app 's leader may differ with mdsal shard leader in that
+// case the xos leader app will not have the data notified.
+public class ConfigDataListener implements ClusteredDataChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigDataListener.class);
     private final DataBroker dataService;
     private Registration westSwitchConfListener;
