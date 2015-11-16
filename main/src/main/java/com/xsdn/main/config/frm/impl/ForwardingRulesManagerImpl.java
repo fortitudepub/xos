@@ -33,7 +33,7 @@ public class ForwardingRulesManagerImpl implements ForwardingRulesManager {
 
     private final DataBroker dataService;
 
-    private ForwardingRulesCommiter<UserFlow> flowListener;
+    private FlowForwarder flowForwarder;
     private ForwardingRulesCommiter<UserGroup> groupListener;
     private FlowNodeObserver nodeListener;
 
@@ -44,7 +44,7 @@ public class ForwardingRulesManagerImpl implements ForwardingRulesManager {
     @Override
     public void start() {
 
-        this.flowListener = new FlowForwarder(this, dataService);
+        this.flowForwarder = new FlowForwarder(this, dataService);
 
         this.groupListener = new GroupForwarder(this, dataService);
 
@@ -56,9 +56,9 @@ public class ForwardingRulesManagerImpl implements ForwardingRulesManager {
 
     @Override
     public void close() throws Exception {
-        if (this.flowListener != null) {
-            this.flowListener.close();
-            this.flowListener = null;
+        if (this.flowForwarder != null) {
+            //this.flowForwarder.close();
+            this.flowForwarder = null;
         }
         if (this.groupListener != null) {
             this.groupListener.close();

@@ -56,14 +56,12 @@ public class ConfigDataListener implements ClusteredDataChangeListener {
                 .<AiActivePassiveSwitchset>child(AiActivePassiveSwitchset.class)
                 .<AiManagedSubnet>child(AiManagedSubnet.class).build();
 
-
         westSwitchConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
                 westSwitchIID, this, AsyncDataBroker.DataChangeScope.BASE);
         eastSwitchConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
                 eastSwitchIID, this, AsyncDataBroker.DataChangeScope.BASE);
         managedSubnetsConfListener = dataService.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
                 managedSubnetIID, this, AsyncDataBroker.DataChangeScope.BASE);
-
 
         LOG.info("XOS finished registered data change listeners");
 
