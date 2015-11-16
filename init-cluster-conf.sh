@@ -14,7 +14,7 @@ cp -af ./karaf/target/assembly ./karaf/target/assembly1
 cp -af ./karaf/target/assembly ./karaf/target/assembly2
 
 # copy module-shards.conf
-dirs="assembly assembly1 asembly2"
+dirs="assembly assembly1 assembly2"
 for dir in ${dirs}; do
     mkdir -p ./karaf/target/${dir}/configuration/initial/
     cp ./conf/module-shards-3-nodes.conf ./karaf/target/${dir}/configuration/initial/module-shards.conf
