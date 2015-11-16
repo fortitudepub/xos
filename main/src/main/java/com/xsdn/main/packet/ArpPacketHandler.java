@@ -29,6 +29,8 @@ public class ArpPacketHandler implements ArpPacketListener {
     @Override
     public void onArpPacketReceived(ArpPacketReceived packetReceived)
     {
+        LOG.debug("Received an arp packet in arp packet handler");
+
         NodeId nodeId;
         ActorRef switchRef;
 

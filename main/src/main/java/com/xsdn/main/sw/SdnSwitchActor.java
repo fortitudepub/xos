@@ -564,6 +564,8 @@ public class SdnSwitchActor extends UntypedActor {
     }
 
     private void processArp(ArpPacketIn pktIn) {
+        LOG.debug("processArp in sdn switch actor.");
+
         if (this.appStatus != XosAppStatusMgr.APP_STATUS_ACTIVE) {
             return;
         }

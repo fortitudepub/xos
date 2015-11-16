@@ -54,6 +54,8 @@ public class Ipv4Decoder extends AbstractPacketDecoder<EthernetPacketReceived, I
   public Ipv4PacketReceived decode(EthernetPacketReceived ethernetPacketReceived) {
     Ipv4PacketReceivedBuilder ipv4ReceivedBuilder = new Ipv4PacketReceivedBuilder();
 
+    _logger.debug("Received an ipv4 packet in ipv4 packet decoder");
+
     // Find the latest packet in the packet-chain, which is an EthernetPacket
     List<PacketChain> packetChainList = ethernetPacketReceived.getPacketChain();
     EthernetPacket ethernetPacket = (EthernetPacket)packetChainList.get(packetChainList.size()-1).getPacket();

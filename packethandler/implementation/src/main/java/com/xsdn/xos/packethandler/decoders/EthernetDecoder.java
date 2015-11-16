@@ -63,6 +63,8 @@ public class EthernetDecoder extends AbstractPacketDecoder<PacketReceived, Ether
     byte[] data = packetReceived.getPayload();
     EthernetPacketReceivedBuilder builder = new EthernetPacketReceivedBuilder();
 
+    _logger.debug("Received an ethernet packet in ethernet packet decoder");
+
     // Save original rawPacket & set the payloadOffset/payloadLength fields
     RawPacketBuilder rpb = new RawPacketBuilder()
         .setIngress(packetReceived.getIngress())

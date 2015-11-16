@@ -53,6 +53,8 @@ public class ArpDecoder extends AbstractPacketDecoder<EthernetPacketReceived, Ar
   public ArpPacketReceived decode(EthernetPacketReceived ethernetPacketReceived) {
     ArpPacketReceivedBuilder arpReceivedBuilder = new ArpPacketReceivedBuilder();
 
+    _logger.debug("Received an arp packet in arp packet decoder");
+
     // Find the latest packet in the packet-chain, which is an EthernetPacket
     List<PacketChain> packetChainList = ethernetPacketReceived.getPacketChain();
     EthernetPacket ethernetPacket = (EthernetPacket)packetChainList.get(packetChainList.size()-1).getPacket();

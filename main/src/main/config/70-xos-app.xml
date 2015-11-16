@@ -10,14 +10,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
 <snapshot>
   <required-capabilities>
     <capability>urn:com:xsdn:xos:params:xml:ns:yang:xos:main?module=xos-main&amp;revision=2015-08-20</capability>
-    <capability>urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding?module=opendaylight-md-sal-binding&amp;revision=2013-10-28</capability>
   </required-capabilities>
   <configuration>
 
     <!-- ZDY: we run our app within ODL, so we can use binding instead of dom api. -->
 
     <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-      <modules>
+      <modules xmlns="urn:opendaylight:params:xml:ns:yang:controller:config">
         <module>
           <type xmlns:prefix="urn:com:xsdn:xos:params:xml:ns:yang:xos:main">prefix:xos-main</type>
           <name>xos-default</name>
@@ -53,8 +52,4 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       </modules>
     </data>
   </configuration>
-
-  <required-capabilities>
-    <capability>urn:com:xsdn:xos:packet:packet-handler-impl?module=packet-handler-impl&amp;revision=2014-05-28</capability>
-  </required-capabilities>
 </snapshot>
