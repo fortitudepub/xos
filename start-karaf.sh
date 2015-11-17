@@ -20,7 +20,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 # patch features before startup, disable region feature which will cause exception and prevent log:display work properly.
-sed -i "s/region,//" ./karaf/target/${dir}/etc/org.apache.karaf.features.cfg
+sed -i "s/region,//" ./karaf/target/assembly/etc/org.apache.karaf.features.cfg
 
 cd ./karaf/target/assembly/bin
 ./karaf
