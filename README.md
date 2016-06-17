@@ -9,4 +9,5 @@ You may obtain the following samples from this project:
 
 - MDSAL clustering interaction, though at the time when I develop the application it does have some issues which I have workarouded.
 - MDSAL data store interaction
+- YANG modeling usage
 - OpenFlow interaction with SDN switch
